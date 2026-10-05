@@ -51,6 +51,7 @@ function AdminPage() {
     ["courses", "Курсы"],
     ["lessons", "Уроки и файлы"],
     ["teachers", "Преподаватели"],
+    ["news", "Новости"],
   ] as const;
 
   return (
@@ -71,6 +72,7 @@ function AdminPage() {
         {tab === "teachers" && <Teachers />}
         {tab === "courses" && <Courses />}
         {tab === "lessons" && <Lessons />}
+        {tab === "news" && <News />}
       </div>
     </div>
   );
