@@ -225,8 +225,8 @@ function Comments({ lessonId }: { lessonId: string }) {
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user || !text.trim()) return;
-      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", u.user.id).maybeSingle();
-      const author = profile?.full_name || u.user.email?.split("@")[0] || "Ученик";
+      const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", u.user.id).maybeSingle();
+      const author = profile?.display_name || u.user.email?.split("@")[0] || "Ученик";
       const { error } = await supabase.from("lesson_comments").insert({
         lesson_id: lessonId,
         user_id: u.user.id,
