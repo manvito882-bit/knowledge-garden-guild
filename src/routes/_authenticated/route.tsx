@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck } from "lucide-react";
+import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { teachersQuery, penColor } from "@/lib/school";
 import { isAdminQuery } from "@/lib/admin";
