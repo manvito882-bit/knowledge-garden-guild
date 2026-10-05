@@ -1,9 +1,10 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X } from "lucide-react";
+import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { teachersQuery, penColor } from "@/lib/school";
+import { isAdminQuery } from "@/lib/admin";
 import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -50,6 +51,7 @@ function Shell() {
 function Nav({ onNavigate }: { onNavigate: () => void }) {
   const { data: teachers } = useQuery(teachersQuery);
   const { theme, toggle } = useTheme();
+  const { data: isAdmin } = useQuery(isAdminQuery);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -94,6 +96,11 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
         )}
       </div>
       <hr className="my-3" />
+      {isAdmin && (
+        <Link to="/admin" activeProps={active} className={item} onClick={onNavigate}>
+          <ShieldCheck className="h-4 w-4" /> Админка
+        </Link>
+      )}
       <Link to="/support" activeProps={active} className={item} onClick={onNavigate}>
         <Headphones className="h-4 w-4" /> Поддержка
       </Link>
