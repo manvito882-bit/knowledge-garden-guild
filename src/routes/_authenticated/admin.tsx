@@ -87,7 +87,7 @@ function Teachers() {
   const [color, setColor] = useState("lime");
 
   const add = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) return undefined;
     const { error } = await supabase.from("teachers").insert({ name, color, position: (data?.length ?? 0) + 1 });
     report(error, "Преподаватель добавлен");
     setName("");
@@ -140,7 +140,7 @@ function Courses() {
 
   const add = async () => {
     const teacher_id = form.teacher_id || teachers?.[0]?.id;
-    if (!form.title.trim() || !form.tag.trim() || !teacher_id) return toast.error("Заполните название, метку и преподавателя");
+    if (!form.title.trim() || !form.tag.trim() || !teacher_id) { toast.error("Заполните название, метку и преподавателя"); return; }
     report((await supabase.from("courses").insert({ ...form, teacher_id })).error, "Курс создан");
     setForm({ title: "", tag: "", description: "", teacher_id: "" });
     inv();
@@ -195,7 +195,7 @@ function Lessons() {
   const [form, setForm] = useState({ title: "", starts_at: "", video_url: "" });
 
   const add = async () => {
-    if (!form.title.trim() || !form.starts_at) return toast.error("Укажите тему и дату");
+    if (!form.title.trim() || !form.starts_at) { toast.error("Укажите тему и дату"); return; }
     const number = (lessons?.reduce((m, l) => Math.max(m, l.number), 0) ?? 0) + 1;
     report(
       (await supabase.from("lessons").insert({
