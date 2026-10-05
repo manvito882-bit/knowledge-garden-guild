@@ -35,7 +35,7 @@ function report(error: { message: string } | null, ok = "Сохранено") {
 
 function AdminPage() {
   const { data: isAdmin, isLoading } = useQuery(isAdminQuery);
-  const [tab, setTab] = useState<"teachers" | "courses" | "lessons">("courses");
+  const [tab, setTab] = useState<"teachers" | "courses" | "lessons" | "news">("courses");
 
   if (isLoading) return <div className="panel h-64 animate-pulse" />;
   if (!isAdmin)
