@@ -179,6 +179,56 @@ function Courses() {
   );
 }
 
+/* ---------- News ---------- */
+function News() {
+  const inv = useInvalidate();
+  const { data: posts } = useQuery({
+    queryKey: ["news"],
+    queryFn: async () =>
+      (await supabase.from("news_posts").select("id,title,body,created_at").order("created_at", { ascending: false })).data ?? [],
+  });
+  const [form, setForm] = useState({ title: "", body: "" });
+
+  const add = async () => {
+    if (!form.title.trim() || !form.body.trim()) { toast.error("Заполните заголовок и текст"); return; }
+    report((await supabase.from("news_posts").insert(form)).error, "Новость опубликована");
+    setForm({ title: "", body: "" });
+    inv();
+  };
+  const del = async (id: string) => {
+    if (!confirm("Удалить новость?")) return;
+    report((await supabase.from("news_posts").delete().eq("id", id)).error, "Удалено");
+    inv();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="panel grid gap-2 p-4">
+        <input className={input} placeholder="Заголовок" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <textarea
+          className={`${input} min-h-28 resize-y`}
+          placeholder="Текст новости"
+          value={form.body}
+          onChange={(e) => setForm({ ...form, body: e.target.value })}
+        />
+        <button className={btn} onClick={add}><Plus className="h-4 w-4" /> Опубликовать</button>
+      </div>
+      <div className="panel space-y-2 p-3">
+        {posts?.map((p) => (
+          <div key={p.id} className="flex items-start justify-between gap-3 rounded-xl bg-tile px-3 py-2.5">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">{p.title}</div>
+              <div className="line-clamp-2 text-xs text-muted-foreground">{p.body}</div>
+            </div>
+            <button className={iconBtn} onClick={() => del(p.id)} aria-label="Удалить"><Trash2 className="h-4 w-4" /></button>
+          </div>
+        ))}
+        {posts?.length === 0 && <p className="px-1 text-sm text-muted-foreground">Новостей пока нет.</p>}
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Lessons ---------- */
 function Lessons() {
   const inv = useInvalidate();
