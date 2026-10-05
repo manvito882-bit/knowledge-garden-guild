@@ -22,6 +22,13 @@
       "when": 1791167531405,
       "tag": "0002_lesson_files_read_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791167814499,
+      "tag": "0003_news_and_lesson_comments",
+      "breakpoints": true
     }
   ]
 }

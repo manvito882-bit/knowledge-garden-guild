@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { ArrowLeft, FileText, Download, ClipboardCheck, Heart, Radio, Play } from "lucide-react";
+import { ArrowLeft, FileText, Download, ClipboardCheck, Heart, Radio, Play, MessageCircle, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { courseQuery, likesQuery, fmtDate } from "@/lib/school";
+import { courseQuery, likesQuery, commentsQuery, fmtDate } from "@/lib/school";
+import { isAdminQuery } from "@/lib/admin";
 import { openLessonFile } from "@/lib/admin";
 import cover from "@/assets/lesson-cover.jpg";
 
@@ -147,6 +148,7 @@ function LessonView({ lesson }: { lesson: Lesson }) {
       </div>
 
       <LikeBox lessonId={lesson.id} />
+      <Comments lessonId={lesson.id} />
     </>
   );
 }
@@ -209,6 +211,96 @@ function LikeBox({ lessonId }: { lessonId: string }) {
         <span className="rounded-full bg-like px-2.5 py-0.5 text-xs font-bold text-card">{data?.count ?? 0}</span>
       </button>
       <p className="text-xs text-muted-foreground">{data?.liked ? "Спасибо! Твой голос учтён" : "Поставь сердечко, если урок был полезен"}</p>
+    </div>
+  );
+}
+
+function Comments({ lessonId }: { lessonId: string }) {
+  const qc = useQueryClient();
+  const { data } = useQuery(commentsQuery(lessonId));
+  const { data: isAdmin } = useQuery(isAdminQuery);
+  const [text, setText] = useState("");
+
+  const send = useMutation({
+    mutationFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || !text.trim()) return;
+      const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", u.user.id).maybeSingle();
+      const author = profile?.display_name || u.user.email?.split("@")[0] || "Ученик";
+      const { error } = await supabase.from("lesson_comments").insert({
+        lesson_id: lessonId,
+        user_id: u.user.id,
+        author_name: author,
+        body: text.trim(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setText("");
+      qc.invalidateQueries({ queryKey: ["comments", lessonId] });
+    },
+    onError: (e) => toast.error("Не отправлено: " + e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("lesson_comments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", lessonId] }),
+  });
+
+  return (
+    <div className="panel mt-5 p-5">
+      <h3 className="flex items-center gap-2 font-bold">
+        <MessageCircle className="h-4 w-4" /> Обсуждение урока
+        <span className="rounded-full bg-tile px-2 py-0.5 text-xs text-muted-foreground">{data?.comments.length ?? 0}</span>
+      </h3>
+      <div className="mt-4 space-y-3">
+        {data?.comments.length === 0 && <p className="text-sm text-muted-foreground">Пока тихо. Задай вопрос первым!</p>}
+        {data?.comments.map((c) => {
+          const f = fmtDate(c.created_at);
+          const canDel = c.user_id === data.me || isAdmin;
+          return (
+            <div key={c.id} className="rounded-2xl bg-tile p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold">{c.author_name}</span>
+                <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  {f.short} · {f.time}
+                  {canDel && (
+                    <button onClick={() => del.mutate(c.id)} aria-label="Удалить" className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </span>
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{c.body}</p>
+            </div>
+          );
+        })}
+      </div>
+      <form
+        className="mt-4 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send.mutate();
+        }}
+      >
+        <input
+          className="min-w-0 flex-1 rounded-xl border bg-tile px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+          placeholder="Вопрос или комментарий…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button
+          type="submit"
+          disabled={!text.trim() || send.isPending}
+          className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          aria-label="Отправить"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </form>
     </div>
   );
 }

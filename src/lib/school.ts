@@ -71,6 +71,33 @@ export const likesQuery = (lessonId: string) =>
     },
   });
 
+export const newsQuery = queryOptions({
+  queryKey: ["news"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("news_posts")
+      .select("id,title,body,created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+});
+
+export const commentsQuery = (lessonId: string) =>
+  queryOptions({
+    queryKey: ["comments", lessonId],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("lesson_comments")
+        .select("id,user_id,author_name,body,created_at")
+        .eq("lesson_id", lessonId)
+        .order("created_at");
+      if (error) throw error;
+      return { comments: data, me: u.user?.id ?? "" };
+    },
+  });
+
 export const penColor: Record<string, string> = {
   lime: "text-pen-lime",
   orange: "text-pen-orange",
