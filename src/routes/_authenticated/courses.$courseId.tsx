@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { ArrowLeft, FileText, Download, ClipboardCheck, Heart, Radio, Play } from "lucide-react";
+import { ArrowLeft, FileText, Download, ClipboardCheck, Heart, Radio, Play, MessageCircle, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { courseQuery, likesQuery, fmtDate } from "@/lib/school";
+import { courseQuery, likesQuery, commentsQuery, fmtDate } from "@/lib/school";
+import { isAdminQuery } from "@/lib/admin";
 import { openLessonFile } from "@/lib/admin";
 import cover from "@/assets/lesson-cover.jpg";
 

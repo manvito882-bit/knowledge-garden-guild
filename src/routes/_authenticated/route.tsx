@@ -73,6 +73,9 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
       <Link to="/schedule" activeProps={active} className={item} onClick={onNavigate}>
         <CalendarDays className="h-4 w-4" /> Расписание
       </Link>
+      <Link to="/news" activeProps={active} className={item} onClick={onNavigate}>
+        <Newspaper className="h-4 w-4" /> Новости
+      </Link>
       <hr className="my-3" />
       <div className="space-y-0.5">
         {teachers?.map((t) =>
