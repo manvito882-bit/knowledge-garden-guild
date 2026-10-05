@@ -1,0 +1,1 @@
+create policy "students read lesson files" on storage.objects for select to authenticated using (bucket_id = 'lesson-files');
