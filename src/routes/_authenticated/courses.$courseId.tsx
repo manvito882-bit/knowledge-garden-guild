@@ -6,6 +6,7 @@ import { ArrowLeft, FileText, Download, ClipboardCheck, Heart, Radio, Play } fro
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { courseQuery, likesQuery, fmtDate } from "@/lib/school";
+import { openLessonFile } from "@/lib/admin";
 import cover from "@/assets/lesson-cover.jpg";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
@@ -171,7 +172,7 @@ function FileBox({ tone, icon, title, files }: { tone: string; icon: React.React
               <FileText className="h-4 w-4 text-muted-foreground" /> {file.name}
             </span>
             <button
-              onClick={() => (file.url ? window.open(file.url, "_blank") : toast("Файл скоро появится"))}
+              onClick={async () => { if (!(await openLessonFile(file.url))) toast("Файл скоро появится"); }}
               className="rounded-lg bg-tile p-1.5"
               aria-label="Скачать"
             >

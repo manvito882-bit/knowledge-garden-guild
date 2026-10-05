@@ -8,6 +8,20 @@
       "when": 1791167061403,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791167523626,
+      "tag": "0001_lesson_files_storage_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791167531405,
+      "tag": "0002_lesson_files_read_policy",
+      "breakpoints": true
     }
   ]
 }
