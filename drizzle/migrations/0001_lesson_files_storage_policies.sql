@@ -1,0 +1,3 @@
+create policy "admin upload lesson files" on storage.objects for insert to authenticated with check (bucket_id = 'lesson-files' and public.has_role(auth.uid(),'admin'));
+create policy "admin delete lesson files" on storage.objects for delete to authenticated using (bucket_id = 'lesson-files' and public.has_role(auth.uid(),'admin'));
+create policy "admin update lesson files" on storage.objects for update to authenticated using (bucket_id = 'lesson-files' and public.has_role(auth.uid(),'admin'));
