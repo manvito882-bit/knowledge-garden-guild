@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper } from "lucide-react";
+import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { teachersQuery, penColor } from "@/lib/school";
 import { isAdminQuery } from "@/lib/admin";
@@ -75,6 +75,9 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
       </Link>
       <Link to="/news" activeProps={active} className={item} onClick={onNavigate}>
         <Newspaper className="h-4 w-4" /> Новости
+      </Link>
+      <Link to="/awards" activeProps={active} className={item} onClick={onNavigate}>
+        <Award className="h-4 w-4" /> Награды
       </Link>
       <hr className="my-3" />
       <div className="space-y-0.5">
