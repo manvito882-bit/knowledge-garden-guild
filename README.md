@@ -1,7 +1,5 @@
 # Школа Мечты
 
-Привет. Можешь ли ты сделать из моего проекта онлайн школу? Что-то типа такого с дизайном как тут.
-
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
