@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAwardsRouteImport } from './routes/_authenticated/awards'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -37,6 +38,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAwardsRoute = AuthenticatedAwardsRouteImport.update({
+  id: '/awards',
+  path: '/awards',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/awards': typeof AuthenticatedAwardsRoute
   '/news': typeof AuthenticatedNewsRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/awards': typeof AuthenticatedAwardsRoute
   '/news': typeof AuthenticatedNewsRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/awards': typeof AuthenticatedAwardsRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin'
+    | '/awards'
     | '/news'
     | '/schedule'
     | '/settings'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin'
+    | '/awards'
     | '/news'
     | '/schedule'
     | '/settings'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/admin'
+    | '/_authenticated/awards'
     | '/_authenticated/news'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
@@ -178,6 +190,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/awards': {
+      id: '/_authenticated/awards'
+      path: '/awards'
+      fullPath: '/awards'
+      preLoaderRoute: typeof AuthenticatedAwardsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/news': {
@@ -227,6 +246,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAwardsRoute: typeof AuthenticatedAwardsRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -237,6 +257,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAwardsRoute: AuthenticatedAwardsRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

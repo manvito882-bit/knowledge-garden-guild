@@ -2,11 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { ArrowLeft, FileText, Download, ClipboardCheck, Heart, Radio, Play, MessageCircle, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Download, ClipboardCheck, Heart, Radio, Play, MessageCircle, Send, Trash2, Eye, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { courseQuery, likesQuery, commentsQuery, fmtDate } from "@/lib/school";
 import { isAdminQuery } from "@/lib/admin";
+import { myProgressQuery, badgesQuery, badgeProgress } from "@/lib/rewards";
 import { openLessonFile } from "@/lib/admin";
 import cover from "@/assets/lesson-cover.jpg";
 
@@ -147,6 +148,7 @@ function LessonView({ lesson }: { lesson: Lesson }) {
         <FileBox tone="bg-primary text-primary-foreground" icon={<ClipboardCheck className="h-4 w-4" />} title="Домашнее задание" files={homework} />
       </div>
 
+      <ProgressBox lessonId={lesson.id} />
       <LikeBox lessonId={lesson.id} />
       <Comments lessonId={lesson.id} />
     </>
@@ -301,6 +303,30 @@ function Comments({ lessonId }: { lessonId: string }) {
           <Send className="h-4 w-4" />
         </button>
       </form>
+    </div>
+  );
+}
+
+function ProgressBox({ lessonId }: { lessonId: string }) {
+  const qc = useQueryClient();
+  const { data: progress } = useQuery(myProgressQuery);
+  const { data: badges } = useQuery(badgesQuery);
+  const row = progress?.find((p) => p.lesson_id === lessonId);
+  const set = async (field: "watched" | "homework_done") => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const next = { watched: row?.watched ?? false, homework_done: row?.homework_done ?? false, [field]: !(row?.[field] ?? false) };
+    const before = new Set((badges ?? []).filter((b) => badgeProgress(b, progress ?? []).earned).map((b) => b.id));
+    const { error } = await supabase.from("lesson_progress").upsert({ user_id: u.user.id, lesson_id: lessonId, ...next, updated_at: new Date().toISOString() });
+    if (error) { toast.error(error.message); return; }
+    const fresh = await qc.fetchQuery({ ...myProgressQuery, staleTime: 0 });
+    (badges ?? []).filter((b) => !before.has(b.id) && badgeProgress(b, fresh).earned).forEach((b) => toast.success(`Новая награда: ${b.title}!`));
+  };
+  const cls = (on?: boolean) => `flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${on ? "bg-primary text-primary-foreground" : "border bg-card"}`;
+  return (
+    <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+      <button className={cls(row?.watched)} onClick={() => set("watched")}><Eye className="h-4 w-4" /> {row?.watched ? "Урок просмотрен" : "Отметить просмотренным"}</button>
+      <button className={cls(row?.homework_done)} onClick={() => set("homework_done")}><CheckCircle2 className="h-4 w-4" /> {row?.homework_done ? "Домашка сдана" : "Отметить: домашка сдана"}</button>
     </div>
   );
 }

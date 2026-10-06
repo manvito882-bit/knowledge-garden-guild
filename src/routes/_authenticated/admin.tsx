@@ -6,6 +6,8 @@ import { Trash2, Plus, Upload, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isAdminQuery } from "@/lib/admin";
 import { penColor } from "@/lib/school";
+import { badgesQuery, BadgeImage, conditionLabel } from "@/lib/rewards";
+import { SupportChat } from "./support";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -35,7 +37,7 @@ function report(error: { message: string } | null, ok = "Сохранено") {
 
 function AdminPage() {
   const { data: isAdmin, isLoading } = useQuery(isAdminQuery);
-  const [tab, setTab] = useState<"teachers" | "courses" | "lessons" | "news">("courses");
+  const [tab, setTab] = useState<"teachers" | "courses" | "lessons" | "news" | "support" | "badges">("courses");
 
   if (isLoading) return <div className="panel h-64 animate-pulse" />;
   if (!isAdmin)
@@ -52,6 +54,8 @@ function AdminPage() {
     ["lessons", "Уроки и файлы"],
     ["teachers", "Преподаватели"],
     ["news", "Новости"],
+    ["badges", "Награды"],
+    ["support", "Поддержка"],
   ] as const;
 
   return (
@@ -73,6 +77,8 @@ function AdminPage() {
         {tab === "courses" && <Courses />}
         {tab === "lessons" && <Lessons />}
         {tab === "news" && <News />}
+        {tab === "badges" && <Badges />}
+        {tab === "support" && <Support />}
       </div>
     </div>
   );
@@ -366,6 +372,116 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
             <input type="file" className="hidden" disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           </label>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Support ---------- */
+function Support() {
+  const { data: threads } = useQuery({
+    queryKey: ["support-threads"],
+    refetchInterval: 10000,
+    queryFn: async () => {
+      const { data } = await supabase.from("support_messages").select("user_id,body,from_admin,created_at").order("created_at", { ascending: false });
+      const map = new Map<string, { user_id: string; last: string; waiting: boolean }>();
+      for (const m of data ?? []) if (!map.has(m.user_id)) map.set(m.user_id, { user_id: m.user_id, last: m.body, waiting: !m.from_admin });
+      const ids = [...map.keys()];
+      const { data: profiles } = ids.length ? await supabase.from("profiles").select("id,display_name,email").in("id", ids) : { data: [] };
+      return [...map.values()].map((t) => {
+        const p = profiles?.find((x) => x.id === t.user_id);
+        return { ...t, name: p?.display_name ?? p?.email ?? "Ученик" };
+      });
+    },
+  });
+  const [sel, setSel] = useState<string | null>(null);
+
+  return (
+    <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+      <div className="panel space-y-2 p-3">
+        {threads?.length === 0 && <p className="p-2 text-sm text-muted-foreground">Обращений пока нет</p>}
+        {threads?.map((t) => (
+          <button key={t.user_id} onClick={() => setSel(t.user_id)} className={`w-full rounded-xl px-3 py-2.5 text-left ${sel === t.user_id ? "bg-primary text-primary-foreground" : "bg-tile"}`}>
+            <div className="flex items-center justify-between text-sm font-semibold">
+              {t.name} {t.waiting && <span className="h-2 w-2 rounded-full bg-like" />}
+            </div>
+            <div className="truncate text-xs opacity-70">{t.last}</div>
+          </button>
+        ))}
+      </div>
+      {sel ? <SupportChat userId={sel} asAdmin /> : <div className="panel p-6 text-sm text-muted-foreground">Выберите обращение</div>}
+    </div>
+  );
+}
+
+/* ---------- Badges ---------- */
+function Badges() {
+  const inv = useInvalidate();
+  const { data: badges } = useQuery(badgesQuery);
+  const { data: courses } = useQuery({
+    queryKey: ["admin-courses"],
+    queryFn: async () => (await supabase.from("courses").select("*, teachers(name)").order("created_at")).data ?? [],
+  });
+  const [form, setForm] = useState({ title: "", description: "", course_id: "", condition: "videos", threshold: 3 });
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const add = async () => {
+    if (!form.title.trim() || form.threshold < 1) { toast.error("Укажите название и количество"); return; }
+    setBusy(true);
+    let image_url: string | null = null;
+    if (file) {
+      const path = `badges/${crypto.randomUUID()}-${file.name.replace(/[^\w.-]/g, "_")}`;
+      const { error } = await supabase.storage.from("lesson-files").upload(path, file);
+      if (error) { toast.error("Картинка не загрузилась: " + error.message); setBusy(false); return; }
+      image_url = "storage:" + path;
+    }
+    const { error } = await supabase.from("badges").insert({ ...form, course_id: form.course_id || null, image_url });
+    report(error, "Награда создана");
+    setBusy(false);
+    setForm({ title: "", description: "", course_id: "", condition: "videos", threshold: 3 });
+    setFile(null);
+    inv();
+  };
+  const del = async (id: string) => {
+    if (!confirm("Удалить награду?")) return;
+    report((await supabase.from("badges").delete().eq("id", id)).error, "Удалено");
+    inv();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="panel grid gap-2 p-4 sm:grid-cols-2">
+        <input className={input} placeholder="Название награды" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <input className={input} placeholder="Описание (необязательно)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <select className={input} value={form.condition} onChange={(e) => setForm({ ...form, condition: e.target.value })}>
+          <option value="videos">Просмотрено уроков</option>
+          <option value="homework">Сдано домашек</option>
+        </select>
+        <input className={input} type="number" min={1} value={form.threshold} onChange={(e) => setForm({ ...form, threshold: Number(e.target.value) })} />
+        <select className={input} value={form.course_id} onChange={(e) => setForm({ ...form, course_id: e.target.value })}>
+          <option value="">Любой курс</option>
+          {courses?.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+        </select>
+        <label className={`${input} flex cursor-pointer items-center gap-2`}>
+          <Upload className="h-4 w-4" /> <span className="truncate">{file ? file.name : "Картинка значка"}</span>
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        </label>
+        <button disabled={busy} className={`${btn} sm:col-span-2`} onClick={add}><Plus className="h-4 w-4" /> Создать награду</button>
+      </div>
+      <div className="panel space-y-2 p-3">
+        {badges?.map((b) => (
+          <div key={b.id} className="flex items-center justify-between gap-3 rounded-xl bg-tile px-3 py-2.5">
+            <div className="flex min-w-0 items-center gap-3">
+              <BadgeImage url={b.image_url} className="h-10 w-10 shrink-0 rounded-full" />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold">{b.title}</div>
+                <div className="text-xs text-muted-foreground">{b.threshold} {conditionLabel(b.condition)} · {b.courses?.title ?? "любой курс"}</div>
+              </div>
+            </div>
+            <button className={iconBtn} onClick={() => del(b.id)} aria-label="Удалить"><Trash2 className="h-4 w-4" /></button>
+          </div>
+        ))}
       </div>
     </div>
   );
