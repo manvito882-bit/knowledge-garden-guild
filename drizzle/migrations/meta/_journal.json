@@ -29,6 +29,13 @@
       "when": 1791167814499,
       "tag": "0003_news_and_lesson_comments",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791245145240,
+      "tag": "0004_support_and_badges",
+      "breakpoints": true
     }
   ]
 }

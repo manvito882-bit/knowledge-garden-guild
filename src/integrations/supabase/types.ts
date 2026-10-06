@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      badges: {
+        Row: {
+          condition: string
+          course_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          threshold: number
+          title: string
+        }
+        Insert: {
+          condition?: string
+          course_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          threshold?: number
+          title: string
+        }
+        Update: {
+          condition?: string
+          course_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          threshold?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badges_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
@@ -142,6 +183,38 @@ export type Database = {
           },
         ]
       }
+      lesson_progress: {
+        Row: {
+          homework_done: boolean
+          lesson_id: string
+          updated_at: string
+          user_id: string
+          watched: boolean
+        }
+        Insert: {
+          homework_done?: boolean
+          lesson_id: string
+          updated_at?: string
+          user_id: string
+          watched?: boolean
+        }
+        Update: {
+          homework_done?: boolean
+          lesson_id?: string
+          updated_at?: string
+          user_id?: string
+          watched?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           course_id: string
@@ -202,17 +275,44 @@ export type Database = {
         Row: {
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
         }
         Insert: {
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id: string
         }
         Update: {
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          body: string
+          created_at: string
+          from_admin: boolean
+          id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_admin?: boolean
+          id?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_admin?: boolean
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
