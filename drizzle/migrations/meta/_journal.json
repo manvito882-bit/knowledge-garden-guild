@@ -36,6 +36,13 @@
       "when": 1791245145240,
       "tag": "0004_support_and_badges",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791331404798,
+      "tag": "0005_curator_role",
+      "breakpoints": true
     }
   ]
 }
