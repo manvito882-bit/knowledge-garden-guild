@@ -90,6 +90,54 @@ export type Database = {
           },
         ]
       }
+      curator_assignments: {
+        Row: {
+          created_at: string
+          curator_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          curator_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          curator_id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
+      curator_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          student_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          student_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       lesson_comments: {
         Row: {
           author_name: string
@@ -294,24 +342,74 @@ export type Database = {
       }
       support_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_path: string | null
           body: string
           created_at: string
           from_admin: boolean
           id: string
+          ticket_id: string | null
           user_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
           body: string
           created_at?: string
           from_admin?: boolean
           id?: string
+          ticket_id?: string | null
           user_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
           body?: string
           created_at?: string
           from_admin?: boolean
           id?: string
+          ticket_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assignee_id: string | null
+          category: string
+          created_at: string
+          id: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignee_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          status?: string
+          subject?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -367,9 +465,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_curator_of: {
+        Args: { _curator: string; _student: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "curator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -497,7 +599,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "curator"],
     },
   },
 } as const
