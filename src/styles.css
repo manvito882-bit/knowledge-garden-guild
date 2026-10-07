@@ -129,3 +129,15 @@
   border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border);
 }
+
+.profile-progress {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--tile);
+  color: var(--primary);
+}
+.profile-progress::-webkit-progress-bar { background: var(--tile); }
+.profile-progress::-webkit-progress-value { background: var(--primary); border-radius: 999px; }
+.profile-progress::-moz-progress-bar { background: var(--primary); border-radius: 999px; }

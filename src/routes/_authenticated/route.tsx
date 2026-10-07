@@ -69,6 +69,9 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
 
   return (
     <nav className="panel flex h-full flex-col overflow-y-auto p-3">
+      <Link to="/profile" activeProps={active} className={item} onClick={onNavigate}>
+        <UserRound className="h-4 w-4" /> Мой профиль
+      </Link>
       <Link to="/courses" activeOptions={{ exact: true }} activeProps={active} className={item} onClick={onNavigate}>
         <Layers className="h-4 w-4" /> Все курсы
       </Link>
