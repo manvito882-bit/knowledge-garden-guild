@@ -1,0 +1,4 @@
+ALTER TABLE public.profiles ADD COLUMN avatar_path text;
+CREATE POLICY "avatar read own or assigned" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'avatars' AND ((storage.foldername(name))[1] = auth.uid()::text OR public.has_role(auth.uid(), 'admin') OR EXISTS (SELECT 1 FROM public.curator_assignments a WHERE (a.student_id::text = (storage.foldername(name))[1] AND a.curator_id = auth.uid()) OR (a.curator_id::text = (storage.foldername(name))[1] AND a.student_id = auth.uid()))));
+CREATE POLICY "avatar upload own" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text AND lower(storage.extension(name)) IN ('jpg', 'jpeg', 'png', 'webp'));
+CREATE POLICY "avatar delete own" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);

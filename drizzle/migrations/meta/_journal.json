@@ -50,6 +50,13 @@
       "when": 1791331441347,
       "tag": "0006_tickets_and_curators",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791417199607,
+      "tag": "0007_student_profile_avatar",
+      "breakpoints": true
     }
   ]
 }
