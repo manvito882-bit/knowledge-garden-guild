@@ -48,7 +48,7 @@ export function ChatThread({
   messages: ChatMsg[];
   onSend: (body: string, file: File | null) => Promise<void>;
   empty: string;
-  disabled?: string;
+  disabled?: string | undefined;
   height?: string;
 }) {
   const [text, setText] = useState("");

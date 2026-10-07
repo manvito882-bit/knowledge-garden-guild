@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChatThread, uploadChatFile } from "@/lib/chat";
 
 /** Chat between a student and their curator. `meId` is the viewer. */
-export function CuratorChat({ studentId, meId, otherName, disabled }: { studentId: string; meId: string; otherName: string; disabled?: string }) {
+export function CuratorChat({ studentId, meId, otherName, disabled }: { studentId: string; meId: string; otherName: string; disabled?: string | undefined }) {
   const qc = useQueryClient();
   const key = ["curator-msgs", studentId];
   const { data } = useQuery({
