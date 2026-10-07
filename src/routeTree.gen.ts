@@ -16,6 +16,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAwardsRouteImport } from './routes/_authenticated/awards'
 import { Route as AuthenticatedCuratorRouteImport } from './routes/_authenticated/curator'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
@@ -55,6 +56,11 @@ const AuthenticatedCuratorRoute = AuthenticatedCuratorRouteImport.update({
 const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
   id: '/news',
   path: '/news',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedScheduleRoute = AuthenticatedScheduleRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/awards': typeof AuthenticatedAwardsRoute
   '/curator': typeof AuthenticatedCuratorRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/awards': typeof AuthenticatedAwardsRoute
   '/curator': typeof AuthenticatedCuratorRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/_authenticated/awards': typeof AuthenticatedAwardsRoute
   '/_authenticated/curator': typeof AuthenticatedCuratorRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/awards'
     | '/curator'
     | '/news'
+    | '/profile'
     | '/schedule'
     | '/settings'
     | '/students'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/awards'
     | '/curator'
     | '/news'
+    | '/profile'
     | '/schedule'
     | '/settings'
     | '/students'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/_authenticated/awards'
     | '/_authenticated/curator'
     | '/_authenticated/news'
+    | '/_authenticated/profile'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
     | '/_authenticated/students'
@@ -237,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNewsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/schedule': {
       id: '/_authenticated/schedule'
       path: '/schedule'
@@ -287,6 +306,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAwardsRoute: typeof AuthenticatedAwardsRoute
   AuthenticatedCuratorRoute: typeof AuthenticatedCuratorRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
@@ -300,6 +320,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAwardsRoute: AuthenticatedAwardsRoute,
   AuthenticatedCuratorRoute: AuthenticatedCuratorRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
