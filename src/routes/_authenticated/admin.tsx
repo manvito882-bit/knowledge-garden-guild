@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { isAdminQuery } from "@/lib/admin";
 import { penColor } from "@/lib/school";
 import { badgesQuery, BadgeImage, conditionLabel } from "@/lib/rewards";
-import { SupportChat } from "./support";
+import { TicketChat } from "./support";
+import { ticketStatus, ticketCategories } from "@/lib/chat";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -379,37 +380,64 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
 
 /* ---------- Support ---------- */
 function Support() {
-  const { data: threads } = useQuery({
-    queryKey: ["support-threads"],
+  const inv = useInvalidate();
+  const [filter, setFilter] = useState("active");
+  const [q, setQ] = useState("");
+  const [sel, setSel] = useState<string | null>(null);
+  const { data: tickets } = useQuery({
+    queryKey: ["tickets", "admin"],
     refetchInterval: 10000,
     queryFn: async () => {
-      const { data } = await supabase.from("support_messages").select("user_id,body,from_admin,created_at").order("created_at", { ascending: false });
-      const map = new Map<string, { user_id: string; last: string; waiting: boolean }>();
-      for (const m of data ?? []) if (!map.has(m.user_id)) map.set(m.user_id, { user_id: m.user_id, last: m.body, waiting: !m.from_admin });
-      const ids = [...map.keys()];
+      const { data } = await supabase.from("support_tickets").select("*").order("updated_at", { ascending: false });
+      const ids = [...new Set((data ?? []).map((t) => t.user_id))];
       const { data: profiles } = ids.length ? await supabase.from("profiles").select("id,display_name,email").in("id", ids) : { data: [] };
-      return [...map.values()].map((t) => {
+      return (data ?? []).map((t) => {
         const p = profiles?.find((x) => x.id === t.user_id);
-        return { ...t, name: p?.display_name ?? p?.email ?? "Ученик" };
+        return { ...t, name: p?.display_name ?? "Ученик", email: p?.email ?? "" };
       });
     },
   });
-  const [sel, setSel] = useState<string | null>(null);
-
+  const list = (tickets ?? []).filter(
+    (t) => (filter === "all" || (filter === "active" ? t.status !== "resolved" : t.status === filter)) &&
+      (t.subject + t.name + t.email).toLowerCase().includes(q.toLowerCase()),
+  );
+  const cur = tickets?.find((t) => t.id === sel);
+  const setStatus = async (status: string) => {
+    if (!cur) return;
+    const { data: u } = await supabase.auth.getUser();
+    report((await supabase.from("support_tickets").update({ status, assignee_id: u.user?.id ?? null }).eq("id", cur.id)).error, "Статус обновлён");
+    inv();
+  };
   return (
-    <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+    <div className="grid gap-4 md:grid-cols-[300px_1fr]">
       <div className="panel space-y-2 p-3">
-        {threads?.length === 0 && <p className="p-2 text-sm text-muted-foreground">Обращений пока нет</p>}
-        {threads?.map((t) => (
-          <button key={t.user_id} onClick={() => setSel(t.user_id)} className={`w-full rounded-xl px-3 py-2.5 text-left ${sel === t.user_id ? "bg-primary text-primary-foreground" : "bg-tile"}`}>
-            <div className="flex items-center justify-between text-sm font-semibold">
-              {t.name} {t.waiting && <span className="h-2 w-2 rounded-full bg-like" />}
-            </div>
-            <div className="truncate text-xs opacity-70">{t.last}</div>
+        <input className={input} placeholder="Поиск: тема, имя, почта" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select className={input} value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="active">Нерешённые</option><option value="open">Открытые</option>
+          <option value="in_progress">В работе</option><option value="resolved">Решённые</option><option value="all">Все</option>
+        </select>
+        {list.length === 0 && <p className="p-2 text-sm text-muted-foreground">Обращений нет</p>}
+        {list.map((t) => (
+          <button key={t.id} onClick={() => setSel(t.id)} className={`w-full rounded-xl px-3 py-2.5 text-left ${sel === t.id ? "bg-primary text-primary-foreground" : "bg-tile"}`}>
+            <div className="flex items-center justify-between gap-2 text-sm font-semibold"><span className="truncate">{t.subject}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${ticketStatus[t.status]?.cls}`}>{ticketStatus[t.status]?.label}</span></div>
+            <div className="truncate text-xs opacity-70">{t.name} · {ticketCategories[t.category] ?? t.category}</div>
           </button>
         ))}
       </div>
-      {sel ? <SupportChat userId={sel} asAdmin /> : <div className="panel p-6 text-sm text-muted-foreground">Выберите обращение</div>}
+      {cur ? (
+        <div className="space-y-3">
+          <div className="panel flex flex-wrap items-center justify-between gap-2 p-4">
+            <div><div className="font-bold">{cur.subject}</div><div className="text-xs text-muted-foreground">{cur.name} {cur.email}</div></div>
+            <div className="flex gap-1">
+              {Object.entries(ticketStatus).map(([k, v]) => (
+                <button key={k} onClick={() => setStatus(k)} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold ${cur.status === k ? v.cls : "border bg-card"}`}>{v.label}</button>
+              ))}
+            </div>
+          </div>
+          <TicketChat ticketId={cur.id} studentId={cur.user_id} asAdmin />
+        </div>
+      ) : <div className="panel p-6 text-sm text-muted-foreground">Выберите обращение</div>}
     </div>
   );
 }

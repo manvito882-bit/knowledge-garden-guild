@@ -27,7 +27,7 @@ const faq = [
 const input = "w-full rounded-xl border bg-tile px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring";
 
 /** Messages of one ticket, used by both the student and the admin. */
-export function TicketChat({ ticketId, studentId, asAdmin, resolved }: { ticketId: string; studentId: string; asAdmin: boolean; resolved?: boolean }) {
+export function TicketChat({ ticketId, studentId, asAdmin }: { ticketId: string; studentId: string; asAdmin: boolean }) {
   const qc = useQueryClient();
   const key = ["ticket-msgs", ticketId];
   const { data } = useQuery({
@@ -51,7 +51,6 @@ export function TicketChat({ ticketId, studentId, asAdmin, resolved }: { ticketI
         qc.invalidateQueries({ queryKey: key });
         qc.invalidateQueries({ queryKey: ["tickets"] });
       }}
-      disabled={!asAdmin && resolved ? undefined : undefined}
     />
   );
 }
