@@ -43,6 +43,13 @@
       "when": 1791331404798,
       "tag": "0005_curator_role",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791331441347,
+      "tag": "0006_tickets_and_curators",
+      "breakpoints": true
     }
   ]
 }
