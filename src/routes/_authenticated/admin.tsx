@@ -38,7 +38,7 @@ function report(error: { message: string } | null, ok = "Сохранено") {
 
 function AdminPage() {
   const { data: isAdmin, isLoading } = useQuery(isAdminQuery);
-  const [tab, setTab] = useState<"teachers" | "courses" | "lessons" | "news" | "support" | "badges">("courses");
+  const [tab, setTab] = useState<"teachers" | "courses" | "lessons" | "news" | "support" | "badges" | "curators">("courses");
 
   if (isLoading) return <div className="panel h-64 animate-pulse" />;
   if (!isAdmin)
@@ -57,6 +57,7 @@ function AdminPage() {
     ["news", "Новости"],
     ["badges", "Награды"],
     ["support", "Поддержка"],
+    ["curators", "Кураторы"],
   ] as const;
 
   return (
@@ -80,6 +81,7 @@ function AdminPage() {
         {tab === "news" && <News />}
         {tab === "badges" && <Badges />}
         {tab === "support" && <Support />}
+        {tab === "curators" && <Curators />}
       </div>
     </div>
   );
@@ -508,6 +510,79 @@ function Badges() {
               </div>
             </div>
             <button className={iconBtn} onClick={() => del(b.id)} aria-label="Удалить"><Trash2 className="h-4 w-4" /></button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Curators ---------- */
+function Curators() {
+  const inv = useInvalidate();
+  const [q, setQ] = useState("");
+  const { data } = useQuery({
+    queryKey: ["admin-people"],
+    queryFn: async () => {
+      const [{ data: people }, { data: roles }, { data: asg }] = await Promise.all([
+        supabase.from("profiles").select("id,display_name,email").order("created_at"),
+        supabase.from("user_roles").select("user_id,role").eq("role", "curator"),
+        supabase.from("curator_assignments").select("student_id,curator_id"),
+      ]);
+      const curatorIds = new Set((roles ?? []).map((r) => r.user_id));
+      return (people ?? []).map((p) => ({
+        ...p,
+        name: p.display_name ?? p.email ?? "Без имени",
+        isCurator: curatorIds.has(p.id),
+        curatorId: asg?.find((a) => a.student_id === p.id)?.curator_id ?? "",
+        students: (asg ?? []).filter((a) => a.curator_id === p.id).length,
+      }));
+    },
+  });
+  const curators = (data ?? []).filter((p) => p.isCurator);
+  const list = (data ?? []).filter((p) => (p.name + (p.email ?? "")).toLowerCase().includes(q.toLowerCase()));
+
+  const toggleRole = async (id: string, on: boolean) => {
+    if (on) report((await supabase.from("user_roles").insert({ user_id: id, role: "curator" })).error, "Назначен куратором");
+    else {
+      if (!confirm("Снять роль куратора? Его ученики останутся без куратора.")) return;
+      await supabase.from("curator_assignments").delete().eq("curator_id", id);
+      report((await supabase.from("user_roles").delete().eq("user_id", id).eq("role", "curator")).error, "Роль снята");
+    }
+    inv();
+  };
+  const assign = async (studentId: string, curatorId: string) => {
+    const { error } = curatorId
+      ? await supabase.from("curator_assignments").upsert({ student_id: studentId, curator_id: curatorId })
+      : await supabase.from("curator_assignments").delete().eq("student_id", studentId);
+    report(error, curatorId ? "Куратор закреплён" : "Куратор откреплён");
+    inv();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="panel p-4 text-sm text-muted-foreground">
+        Отметьте сотрудников как кураторов, затем выберите куратора каждому ученику. Куратор увидит своих учеников в разделе «Мои ученики».
+      </div>
+      <input className={input} placeholder="Поиск по имени или почте" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="panel space-y-2 p-3">
+        {list.map((p) => (
+          <div key={p.id} className="flex flex-col gap-2 rounded-xl bg-tile px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold">{p.name}{p.isCurator && <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">куратор · {p.students} уч.</span>}</div>
+              <div className="truncate text-xs text-muted-foreground">{p.email}</div>
+            </div>
+            <div className="flex gap-2">
+              {!p.isCurator && (
+                <select className={`${input} sm:w-48`} value={p.curatorId} onChange={(e) => assign(p.id, e.target.value)}>
+                  <option value="">Без куратора</option>
+                  {curators.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              )}
+              <button onClick={() => toggleRole(p.id, !p.isCurator)} className="shrink-0 rounded-xl border bg-card px-3 py-2 text-xs font-semibold">
+                {p.isCurator ? "Снять куратора" : "Сделать куратором"}
+              </button>
+            </div>
           </div>
         ))}
       </div>

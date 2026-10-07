@@ -1,11 +1,12 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper, Award } from "lucide-react";
+import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper, Award, UserRound, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { teachersQuery, penColor } from "@/lib/school";
 import { isAdminQuery } from "@/lib/admin";
 import { useTheme } from "@/lib/theme";
+import { meQuery } from "@/lib/chat";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -52,6 +53,7 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
   const { data: teachers } = useQuery(teachersQuery);
   const { theme, toggle } = useTheme();
   const { data: isAdmin } = useQuery(isAdminQuery);
+  const { data: me } = useQuery(meQuery);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -79,6 +81,14 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
       <Link to="/awards" activeProps={active} className={item} onClick={onNavigate}>
         <Award className="h-4 w-4" /> Награды
       </Link>
+      <Link to="/curator" activeProps={active} className={item} onClick={onNavigate}>
+        <UserRound className="h-4 w-4" /> Мой куратор
+      </Link>
+      {me?.roles.includes("curator") && (
+        <Link to="/students" activeProps={active} className={item} onClick={onNavigate}>
+          <Users className="h-4 w-4" /> Мои ученики
+        </Link>
+      )}
       <hr className="my-3" />
       <div className="space-y-0.5">
         {teachers?.map((t) =>
