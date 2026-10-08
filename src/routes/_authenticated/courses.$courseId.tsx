@@ -110,7 +110,7 @@ function LessonView({ lesson }: { lesson: Lesson }) {
 
   return (
     <>
-      <div className="relative mt-5 overflow-hidden rounded-3xl">
+      {lesson.video_url?.startsWith("storage:") ? <VideoPlayer key={lesson.id} path={lesson.video_url.slice(8)} /> : <div className="relative mt-5 overflow-hidden rounded-3xl">
         <img src={cover} width={1280} height={720} alt="" className="aspect-video w-full object-cover" />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
           <p className="max-w-md font-display text-lg font-bold leading-tight text-card md:text-3xl">{lesson.title}</p>
@@ -137,7 +137,7 @@ function LessonView({ lesson }: { lesson: Lesson }) {
             </div>
           </div>
         )}
-      </div>
+      </div>}
 
       <h2 className="mt-6 text-lg font-bold md:text-xl">
         {String(lesson.number).padStart(2, "0")}. {lesson.title}
@@ -153,6 +153,21 @@ function LessonView({ lesson }: { lesson: Lesson }) {
       <Comments lessonId={lesson.id} />
     </>
   );
+}
+
+function VideoPlayer({ path }: { path: string }) {
+  const { data, isError, refetch } = useQuery({
+    queryKey: ["lesson-video", path],
+    staleTime: 3_000_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage.from("lesson-videos").createSignedUrl(path, 3600 * 4);
+      if (error) throw error;
+      return data.signedUrl;
+    },
+  });
+  if (isError) return <div className="mt-5 flex aspect-video items-center justify-center rounded-3xl bg-tile text-sm">Видео не загрузилось. <button className="ml-2 underline" onClick={() => void refetch()}>Повторить</button></div>;
+  if (!data) return <div className="mt-5 aspect-video animate-pulse rounded-3xl bg-tile" />;
+  return <video src={data} controls playsInline preload="metadata" controlsList="nodownload" className="mt-5 aspect-video w-full rounded-3xl bg-foreground" />;
 }
 
 function FileBox({ tone, icon, title, files }: { tone: string; icon: React.ReactNode; title: string; files: Lesson["lesson_files"] }) {
