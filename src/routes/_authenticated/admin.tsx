@@ -335,13 +335,13 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
     const path = `${lesson.id}/${crypto.randomUUID()}.${ext}`;
     try {
       const { data: s } = await supabase.auth.getSession();
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/lesson-videos/${path}`;
+      const url = `${import.meta.env['VITE_SUPABASE_URL']}/storage/v1/object/lesson-videos/${path}`;
       // XHR instead of the client upload so the admin sees progress on big files.
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", url);
         xhr.setRequestHeader("Authorization", `Bearer ${s.session?.access_token ?? ""}`);
-        xhr.setRequestHeader("apikey", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+        xhr.setRequestHeader("apikey", import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY']);
         xhr.setRequestHeader("Content-Type", file.type);
         xhr.upload.onprogress = (e) => e.lengthComputable && setVideoBusy(Math.round((e.loaded / e.total) * 100));
         xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(xhr.responseText)));
