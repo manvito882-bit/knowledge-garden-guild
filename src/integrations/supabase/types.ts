@@ -472,6 +472,35 @@ export type Database = {
         Args: { _curator: string; _student: string }
         Returns: boolean
       }
+      leaderboard: {
+        Args: never
+        Returns: {
+          avatar_path: string
+          display_name: string
+          homework: number
+          id: string
+          score: number
+          watched: number
+        }[]
+      }
+      student_card: {
+        Args: { _id: string }
+        Returns: {
+          avatar_path: string
+          created_at: string
+          display_name: string
+          id: string
+          is_curator: boolean
+        }[]
+      }
+      student_progress: {
+        Args: { _id: string }
+        Returns: {
+          course_id: string
+          homework_done: boolean
+          watched: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "curator"

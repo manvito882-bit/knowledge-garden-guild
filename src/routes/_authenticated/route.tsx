@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper, Award, UserRound, Users } from "lucide-react";
+import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper, Award, UserRound, Users, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { teachersQuery, penColor } from "@/lib/school";
 import { isAdminQuery } from "@/lib/admin";
@@ -83,6 +83,9 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
       </Link>
       <Link to="/awards" activeProps={active} className={item} onClick={onNavigate}>
         <Award className="h-4 w-4" /> Награды
+      </Link>
+      <Link to="/leaderboard" activeProps={active} className={item} onClick={onNavigate}>
+        <Trophy className="h-4 w-4" /> Рейтинг
       </Link>
       <Link to="/curator" activeProps={active} className={item} onClick={onNavigate}>
         <UserRound className="h-4 w-4" /> Мой куратор

@@ -266,7 +266,7 @@ function Comments({ lessonId }: { lessonId: string }) {
           return (
             <div key={c.id} className="rounded-2xl bg-tile p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold">{c.author_name}</span>
+                <Link to="/u/$userId" params={{ userId: c.user_id }} className="text-xs font-bold hover:underline">{c.author_name}</Link>
                 <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
                   {f.short} · {f.time}
                   {canDel && (
