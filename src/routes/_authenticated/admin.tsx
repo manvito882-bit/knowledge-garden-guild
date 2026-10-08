@@ -311,11 +311,54 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
   const [video, setVideo] = useState(lesson.video_url ?? "");
   const [kind, setKind] = useState("material");
   const [busy, setBusy] = useState(false);
+  const [videoBusy, setVideoBusy] = useState<number | null>(null);
 
   const save = async () => {
     report(
       (await supabase.from("lessons").update({ title, starts_at: new Date(startsAt).toISOString(), video_url: video || null }).eq("id", lesson.id)).error,
     );
+    onChange();
+  };
+  const setLessonVideo = async (value: string | null) => {
+    const old = lesson.video_url;
+    const { error } = await supabase.from("lessons").update({ video_url: value }).eq("id", lesson.id);
+    if (error) return error;
+    if (old?.startsWith("storage:") && old !== value) await supabase.storage.from("lesson-videos").remove([old.slice(8)]);
+    setVideo(value ?? "");
+    return null;
+  };
+  const uploadVideo = async (file: File) => {
+    if (!file.type.startsWith("video/")) { toast.error("Выберите видеофайл (MP4, WebM, MOV)"); return; }
+    if (file.size > 2 * 1024 ** 3) { toast.error("Видео больше 2 ГБ"); return; }
+    setVideoBusy(0);
+    const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
+    const path = `${lesson.id}/${crypto.randomUUID()}.${ext}`;
+    try {
+      const { data: s } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/lesson-videos/${path}`;
+      // XHR instead of the client upload so the admin sees progress on big files.
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Authorization", `Bearer ${s.session?.access_token ?? ""}`);
+        xhr.setRequestHeader("apikey", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.upload.onprogress = (e) => e.lengthComputable && setVideoBusy(Math.round((e.loaded / e.total) * 100));
+        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(xhr.responseText)));
+        xhr.onerror = () => reject(new Error("network"));
+        xhr.send(file);
+      });
+      const err = await setLessonVideo("storage:" + path);
+      if (err) { await supabase.storage.from("lesson-videos").remove([path]); throw err; }
+      toast.success("Видео загружено");
+      onChange();
+    } catch {
+      toast.error("Не удалось загрузить видео");
+    } finally { setVideoBusy(null); }
+  };
+  const removeVideo = async () => {
+    if (!confirm("Удалить видео урока?")) return;
+    report(await setLessonVideo(null), "Видео удалено");
     onChange();
   };
   const del = async () => {
@@ -351,9 +394,24 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <input className={`${input} sm:col-span-2`} value={title} onChange={(e) => setTitle(e.target.value)} />
         <input className={input} type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
-        <input className={input} placeholder="Ссылка на видео" value={video} onChange={(e) => setVideo(e.target.value)} />
+        {video.startsWith("storage:") ? (
+          <div className={`${input} flex items-center justify-between gap-2`}>
+            <span className="truncate">Видео загружено</span>
+            <button type="button" className={iconBtn} onClick={removeVideo} aria-label="Удалить видео"><Trash2 className="h-4 w-4" /></button>
+          </div>
+        ) : (
+          <input className={input} placeholder="Ссылка на видео" value={video} onChange={(e) => setVideo(e.target.value)} />
+        )}
       </div>
-      <button className={`${btn} mt-2`} onClick={save}>Сохранить</button>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button className={btn} onClick={save}>Сохранить</button>
+        <label className={`${btn} cursor-pointer ${videoBusy !== null ? "opacity-60" : ""}`}>
+          <Upload className="mr-1 inline h-4 w-4" />
+          {videoBusy !== null ? `Загрузка видео… ${videoBusy}%` : "Загрузить видео"}
+          <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" disabled={videoBusy !== null}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadVideo(f); e.target.value = ""; }} />
+        </label>
+      </div>
 
       <div className="mt-4 space-y-2">
         {lesson.lesson_files.map((f) => (
