@@ -57,6 +57,13 @@
       "when": 1791417199607,
       "tag": "0007_student_profile_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791458703709,
+      "tag": "0008_public_student_profiles",
+      "breakpoints": true
     }
   ]
 }
