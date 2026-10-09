@@ -92,7 +92,7 @@ export function VideoPlayer({ src, className = "" }: { src: string; className?: 
   const cycleSpeed = () => {
     const el = v();
     if (!el) return;
-    const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+    const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length] ?? 1;
     el.playbackRate = next;
     setSpeed(next);
     poke();
