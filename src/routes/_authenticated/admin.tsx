@@ -328,32 +328,40 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
     return null;
   };
   const uploadVideo = async (file: File) => {
-    if (!file.type.startsWith("video/")) { toast.error("Выберите видеофайл (MP4, WebM, MOV)"); return; }
-    if (file.size > 2 * 1024 ** 3) { toast.error("Видео больше 2 ГБ"); return; }
-    setVideoBusy(0);
     const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
-    const path = `${lesson.id}/${crypto.randomUUID()}.${ext}`;
+    const okExt = ["mp4", "m4v", "mov", "webm"].includes(ext);
+    if (!file.type.startsWith("video/") && !okExt) { toast.error("Выберите видеофайл (MP4, WebM, MOV)"); return; }
+    if (file.size > 2 * 1024 ** 3) { toast.error("Видео больше 2 ГБ"); return; }
+    const contentType = file.type || (ext === "webm" ? "video/webm" : ext === "mov" ? "video/quicktime" : "video/mp4");
+    setVideoBusy(0);
+    const path = `${lesson.id}/${crypto.randomUUID()}.${okExt ? ext : "mp4"}`;
     try {
       const { data: s } = await supabase.auth.getSession();
-      const url = `${import.meta.env['VITE_SUPABASE_URL']}/storage/v1/object/lesson-videos/${path}`;
-      // XHR instead of the client upload so the admin sees progress on big files.
+      if (!s.session) throw new Error("no session");
+      const { Upload } = await import("tus-js-client");
+      // Resumable upload in 6 MB chunks: survives flaky mobile networks and shows progress.
       await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", url);
-        xhr.setRequestHeader("Authorization", `Bearer ${s.session?.access_token ?? ""}`);
-        xhr.setRequestHeader("apikey", import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY']);
-        xhr.setRequestHeader("Content-Type", file.type);
-        xhr.upload.onprogress = (e) => e.lengthComputable && setVideoBusy(Math.round((e.loaded / e.total) * 100));
-        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(xhr.responseText)));
-        xhr.onerror = () => reject(new Error("network"));
-        xhr.send(file);
+        const up = new Upload(file, {
+          endpoint: `${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/upload/resumable`,
+          retryDelays: [0, 2000, 5000, 10000, 20000],
+          headers: { authorization: `Bearer ${s.session.access_token}`, apikey: import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"], "x-upsert": "false" },
+          uploadDataDuringCreation: true,
+          removeFingerprintOnSuccess: true,
+          chunkSize: 6 * 1024 * 1024,
+          metadata: { bucketName: "lesson-videos", objectName: path, contentType, cacheControl: "3600" },
+          onError: reject,
+          onProgress: (sent, total) => setVideoBusy(Math.round((sent / total) * 100)),
+          onSuccess: () => resolve(),
+        });
+        up.start();
       });
       const err = await setLessonVideo("storage:" + path);
       if (err) { await supabase.storage.from("lesson-videos").remove([path]); throw err; }
       toast.success("Видео загружено");
       onChange();
-    } catch {
-      toast.error("Не удалось загрузить видео");
+    } catch (e) {
+      console.error("video upload failed", e);
+      toast.error("Не удалось загрузить видео. Проверьте интернет и попробуйте ещё раз.");
     } finally { setVideoBusy(null); }
   };
   const removeVideo = async () => {
