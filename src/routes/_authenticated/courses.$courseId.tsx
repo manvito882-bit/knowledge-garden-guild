@@ -93,6 +93,40 @@ function CoursePage() {
   );
 }
 
+// Turns a link from a video site into something we can play right on the lesson page.
+function videoEmbed(raw: string): { type: "iframe" | "video"; src: string } | null {
+  let u: URL;
+  try { u = new URL(raw.trim()); } catch { return null; }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+  const host = u.hostname.replace(/^(www\.|m\.)/, "");
+  const parts = u.pathname.split("/").filter(Boolean);
+  if (/\.(mp4|webm|m4v|mov)$/i.test(u.pathname)) return { type: "video", src: u.href };
+  if (host === "youtu.be" && parts[0]) return { type: "iframe", src: `https://www.youtube-nocookie.com/embed/${parts[0]}` };
+  if (host.endsWith("youtube.com")) {
+    const id = u.searchParams.get("v") ?? (["shorts", "live", "embed"].includes(parts[0] ?? "") ? parts[1] : null);
+    if (id) return { type: "iframe", src: `https://www.youtube-nocookie.com/embed/${id}` };
+  }
+  if (host.endsWith("vimeo.com")) {
+    const id = parts.find((p) => /^\d+$/.test(p));
+    if (id) return { type: "iframe", src: `https://player.vimeo.com/video/${id}` };
+  }
+  if (host === "rutube.ru") {
+    const id = parts[0] === "play" ? parts[2] : parts[0] === "video" ? parts[1] : null;
+    if (id) return { type: "iframe", src: `https://rutube.ru/play/embed/${id}` };
+  }
+  if (host === "vk.com" || host === "vkvideo.ru" || host === "vk.ru") {
+    if (parts[0] === "video_ext.php") return { type: "iframe", src: u.href };
+    const m = (u.searchParams.get("z") ?? parts.join("/")).match(/video(-?\d+)_(\d+)/);
+    if (m) return { type: "iframe", src: `https://vk.com/video_ext.php?oid=${m[1]}&id=${m[2]}&hd=2` };
+  }
+  if (host === "drive.google.com") {
+    const i = parts.indexOf("d");
+    const id = i >= 0 ? parts[i + 1] : u.searchParams.get("id");
+    if (id) return { type: "iframe", src: `https://drive.google.com/file/d/${id}/preview` };
+  }
+  return null;
+}
+
 type Lesson = {
   id: string;
   number: number;
@@ -105,12 +139,16 @@ type Lesson = {
 function LessonView({ lesson }: { lesson: Lesson }) {
   const countdown = useCountdown(lesson.starts_at);
   const f = fmtDate(lesson.starts_at);
+  const embed = lesson.video_url && !lesson.video_url.startsWith("storage:") ? videoEmbed(lesson.video_url) : null;
   const materials = lesson.lesson_files.filter((x) => x.kind === "material");
   const homework = lesson.lesson_files.filter((x) => x.kind === "homework");
 
   return (
     <>
-      {lesson.video_url?.startsWith("storage:") ? <VideoPlayer key={lesson.id} path={lesson.video_url.slice(8)} /> : <div className="relative mt-5 overflow-hidden rounded-3xl">
+      {lesson.video_url?.startsWith("storage:") ? <VideoPlayer key={lesson.id} path={lesson.video_url.slice(8)} />
+        : embed?.type === "iframe" ? <iframe key={lesson.id} src={embed.src} title={lesson.title} className="mt-5 aspect-video w-full rounded-3xl border-0 bg-foreground" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+        : embed?.type === "video" ? <video key={lesson.id} src={embed.src} controls playsInline preload="metadata" className="mt-5 aspect-video w-full rounded-3xl bg-foreground" />
+        : <div className="relative mt-5 overflow-hidden rounded-3xl">
         <img src={cover} width={1280} height={720} alt="" className="aspect-video w-full object-cover" />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
           <p className="max-w-md font-display text-lg font-bold leading-tight text-card md:text-3xl">{lesson.title}</p>
