@@ -373,7 +373,7 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
       onChange();
     } catch (e) {
       console.error("video upload failed", e);
-      toast.error("Не удалось загрузить видео. Проверьте интернет и попробуйте ещё раз.");
+      toast.error("Не удалось загрузить видео: " + (e instanceof Error ? e.message.slice(0, 160) : "ошибка сети"));
     } finally { setVideoBusy(null); }
   };
   const removeVideo = async () => {
