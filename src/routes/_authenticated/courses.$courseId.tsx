@@ -10,6 +10,7 @@ import { isAdminQuery } from "@/lib/admin";
 import { myProgressQuery, badgesQuery, badgeProgress } from "@/lib/rewards";
 import { openLessonFile } from "@/lib/admin";
 import cover from "@/assets/lesson-cover.jpg";
+import { VideoPlayer as Player } from "@/components/VideoPlayer";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   validateSearch: z.object({ lesson: z.number().optional() }),
@@ -145,9 +146,9 @@ function LessonView({ lesson }: { lesson: Lesson }) {
 
   return (
     <>
-      {lesson.video_url?.startsWith("storage:") ? <VideoPlayer key={lesson.id} path={lesson.video_url.slice(8)} />
+      {lesson.video_url?.startsWith("storage:") ? <StoredVideo key={lesson.id} path={lesson.video_url.slice(8)} />
         : embed?.type === "iframe" ? <iframe key={lesson.id} src={embed.src} title={lesson.title} className="mt-5 aspect-video w-full rounded-3xl border-0 bg-foreground" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
-        : embed?.type === "video" ? <video key={lesson.id} src={embed.src} controls playsInline preload="metadata" className="mt-5 aspect-video w-full rounded-3xl bg-foreground" />
+        : embed?.type === "video" ? <Player key={lesson.id} src={embed.src} className="mt-5" />
         : <div className="relative mt-5 overflow-hidden rounded-3xl">
         <img src={cover} width={1280} height={720} alt="" className="aspect-video w-full object-cover" />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
@@ -193,7 +194,7 @@ function LessonView({ lesson }: { lesson: Lesson }) {
   );
 }
 
-function VideoPlayer({ path }: { path: string }) {
+function StoredVideo({ path }: { path: string }) {
   const { data, isError, refetch } = useQuery({
     queryKey: ["lesson-video", path],
     staleTime: 3_000_000,
@@ -205,7 +206,7 @@ function VideoPlayer({ path }: { path: string }) {
   });
   if (isError) return <div className="mt-5 flex aspect-video items-center justify-center rounded-3xl bg-tile text-sm">Видео не загрузилось. <button className="ml-2 underline" onClick={() => void refetch()}>Повторить</button></div>;
   if (!data) return <div className="mt-5 aspect-video animate-pulse rounded-3xl bg-tile" />;
-  return <video src={data} controls playsInline preload="metadata" controlsList="nodownload" className="mt-5 aspect-video w-full rounded-3xl bg-foreground" />;
+  return <Player src={data} className="mt-5" />;
 }
 
 function FileBox({ tone, icon, title, files }: { tone: string; icon: React.ReactNode; title: string; files: Lesson["lesson_files"] }) {
