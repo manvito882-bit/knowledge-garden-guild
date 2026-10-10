@@ -343,17 +343,29 @@ function LessonEditor({ lesson, onChange }: { lesson: LessonRow; onChange: () =>
       await new Promise<void>((resolve, reject) => {
         const up = new Upload(file, {
           endpoint: `${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/upload/resumable`,
-          retryDelays: [0, 2000, 5000, 10000, 20000],
-          headers: { authorization: `Bearer ${s.session.access_token}`, apikey: import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"], "x-upsert": "false" },
-          uploadDataDuringCreation: true,
+          retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000],
+          headers: { apikey: import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"], "x-upsert": "true" },
           removeFingerprintOnSuccess: true,
           chunkSize: 6 * 1024 * 1024,
           metadata: { bucketName: "lesson-videos", objectName: path, contentType, cacheControl: "3600" },
+          // Long uploads outlive the 1h login token: attach a fresh one to every chunk.
+          onBeforeRequest: async (req) => {
+            const { data } = await supabase.auth.getSession();
+            let token = data.session?.access_token;
+            if (data.session && (data.session.expires_at ?? 0) * 1000 - Date.now() < 120_000) {
+              token = (await supabase.auth.refreshSession()).data.session?.access_token ?? token;
+            }
+            if (token) req.setHeader("authorization", `Bearer ${token}`);
+          },
+          onShouldRetry: (err) => {
+            const st = (err as { originalResponse?: { getStatus(): number } }).originalResponse?.getStatus() ?? 0;
+            return st !== 413 && st !== 400;
+          },
           onError: reject,
           onProgress: (sent, total) => setVideoBusy(Math.round((sent / total) * 100)),
           onSuccess: () => resolve(),
         });
-        up.start();
+        up.findPreviousUploads().then((prev) => { if (prev[0]) up.resumeFromPreviousUpload(prev[0]); up.start(); });
       });
       const err = await setLessonVideo("storage:" + path);
       if (err) { await supabase.storage.from("lesson-videos").remove([path]); throw err; }
