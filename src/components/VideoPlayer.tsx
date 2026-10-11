@@ -26,6 +26,8 @@ export function VideoPlayer({ src, className = "" }: { src: string; className?: 
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [seeking, setSeeking] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const v = () => videoRef.current;
 
@@ -52,7 +54,14 @@ export function VideoPlayer({ src, className = "" }: { src: string; className?: 
   const togglePlay = () => {
     const el = v();
     if (!el) return;
-    if (el.paused) void el.play();
+    if (el.paused) {
+      setLoading(true);
+      el.play().catch(() => {
+        // Autoplay with sound blocked or source not ready: try again muted.
+        el.muted = true; setMuted(true);
+        el.play().catch(() => setLoading(false));
+      });
+    }
     else el.pause();
     poke();
   };
@@ -99,8 +108,10 @@ export function VideoPlayer({ src, className = "" }: { src: string; className?: 
   };
 
   const toggleFullscreen = () => {
+    const el = v() as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
     if (document.fullscreenElement) void document.exitFullscreen();
-    else void wrapRef.current?.requestFullscreen();
+    else if (wrapRef.current?.requestFullscreen) void wrapRef.current.requestFullscreen().catch(() => el?.webkitEnterFullscreen?.());
+    else el?.webkitEnterFullscreen?.(); // iPhone
     poke();
   };
 
@@ -115,6 +126,18 @@ export function VideoPlayer({ src, className = "" }: { src: string; className?: 
     }
     poke();
   };
+
+  if (failed) {
+    return (
+      <div className={`flex aspect-video flex-col items-center justify-center gap-3 rounded-3xl bg-tile p-6 text-center text-sm ${className}`}>
+        <p className="font-semibold">Этот браузер не смог воспроизвести видео.</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <button onClick={() => setFailed(false)} className="rounded-xl border bg-card px-4 py-2 font-semibold">Попробовать снова</button>
+          <a href={src} target="_blank" rel="noreferrer" className="rounded-xl bg-primary px-4 py-2 font-bold text-primary-foreground">Открыть видео отдельно</a>
+        </div>
+      </div>
+    );
+  }
 
   const progress = duration > 0 ? (time / duration) * 100 : 0;
   const bufPct = duration > 0 ? (buffered / duration) * 100 : 0;
@@ -131,6 +154,10 @@ export function VideoPlayer({ src, className = "" }: { src: string; className?: 
         src={src}
         playsInline
         preload="metadata"
+        onError={() => { setFailed(true); setLoading(false); }}
+        onWaiting={() => setLoading(true)}
+        onPlaying={() => setLoading(false)}
+        onCanPlay={() => setLoading(false)}
         controlsList="nodownload"
         className="aspect-video w-full cursor-pointer"
         onClick={togglePlay}
@@ -146,6 +173,11 @@ export function VideoPlayer({ src, className = "" }: { src: string; className?: 
         onDoubleClick={toggleFullscreen}
       />
 
+      {loading && playing && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span className="h-12 w-12 animate-spin rounded-full border-4 border-background/30 border-t-primary" />
+        </div>
+      )}
       {/* big center play when paused */}
       {!playing && (
         <button
