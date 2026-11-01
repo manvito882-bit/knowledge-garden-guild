@@ -11,6 +11,7 @@ import { myProgressQuery, badgesQuery, badgeProgress } from "@/lib/rewards";
 import { openLessonFile } from "@/lib/admin";
 import cover from "@/assets/lesson-cover.jpg";
 import { VideoPlayer as Player } from "@/components/VideoPlayer";
+import { VoiceChat } from "@/components/VoiceChat";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   validateSearch: z.object({ lesson: z.number().optional() }),

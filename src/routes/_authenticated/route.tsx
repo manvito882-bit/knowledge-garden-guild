@@ -7,6 +7,7 @@ import { teachersQuery, penColor } from "@/lib/school";
 import { isAdminQuery } from "@/lib/admin";
 import { useTheme } from "@/lib/theme";
 import { meQuery } from "@/lib/chat";
+import { NotificationBell } from "@/lib/notifications";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
