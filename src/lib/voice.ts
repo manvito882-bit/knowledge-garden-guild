@@ -98,6 +98,7 @@ export class VoiceRoom {
     };
     pc.ontrack = (e) => {
       const stream = e.streams[0];
+      if (!stream) return;
       let audio = this.audios.get(peerId);
       if (!audio) {
         audio = new Audio();
