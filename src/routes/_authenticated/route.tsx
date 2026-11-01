@@ -29,9 +29,12 @@ function Shell() {
       <div className="min-w-0 flex-1">
         <div className="mb-3 flex items-center justify-between md:hidden">
           <span className="font-display text-lg font-bold">luminary</span>
-          <button onClick={() => setOpen(true)} aria-label="Меню" className="rounded-xl border bg-card p-2">
-            <Menu className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button onClick={() => setOpen(true)} aria-label="Меню" className="rounded-xl border bg-card p-2">
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
         </div>
         <Outlet />
       </div>
@@ -70,6 +73,10 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
 
   return (
     <nav className="panel flex h-full flex-col overflow-y-auto p-3">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <span className="font-display text-lg font-bold">luminary</span>
+        <NotificationBell />
+      </div>
       <Link to="/profile" activeProps={active} className={item} onClick={onNavigate}>
         <UserRound className="h-4 w-4" /> Мой профиль
       </Link>
