@@ -71,6 +71,13 @@
       "when": 1791459951191,
       "tag": "0009_lesson_videos_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793580111564,
+      "tag": "0010_notifications",
+      "breakpoints": true
     }
   ]
 }
