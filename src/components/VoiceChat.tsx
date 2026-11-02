@@ -1,46 +1,73 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Mic, MicOff, Headphones, HeadphoneOff, Phone, PhoneOff, Volume2 } from "lucide-react";
+import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, AudioLines, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceRoom, type VoicePeer } from "@/lib/voice";
 import { meQuery } from "@/lib/chat";
 import { supabase } from "@/integrations/supabase/client";
 
+function initials(n: string) {
+  return n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
+}
+
+function Seat({ p, you }: { p: VoicePeer; you?: boolean }) {
+  return (
+    <div className="flex w-20 flex-col items-center gap-1.5">
+      <div className="relative">
+        <div
+          className={`flex h-14 w-14 items-center justify-center rounded-full font-display text-base font-bold transition-all ${
+            p.speaking ? "bg-primary text-primary-foreground ring-4 ring-primary/40 scale-105" : "bg-tile text-foreground"
+          }`}
+        >
+          {initials(p.name)}
+        </div>
+        {(p.muted || p.deafened) && (
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-card bg-like text-card">
+            {p.deafened ? <HeadphoneOff className="h-3 w-3" /> : <MicOff className="h-3 w-3" />}
+          </span>
+        )}
+      </div>
+      <span className="w-full truncate text-center text-xs font-semibold">{you ? "Вы" : p.name}</span>
+    </div>
+  );
+}
+
 export function VoiceChat({ courseId }: { courseId: string }) {
   const { data: me } = useQuery(meQuery);
   const [peers, setPeers] = useState<VoicePeer[]>([]);
   const [joined, setJoined] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
-  const [name, setName] = useState("Я");
+  const [name, setName] = useState("Участник");
   const room = useRef<VoiceRoom | null>(null);
 
   useEffect(() => {
     if (!me?.id) return;
-    void supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", me.id)
-      .maybeSingle()
+    void supabase.from("profiles").select("display_name").eq("id", me.id).maybeSingle()
       .then(({ data }) => setName(data?.display_name?.trim() || "Участник"));
   }, [me?.id]);
 
   useEffect(() => () => room.current?.leave(), []);
+  useEffect(() => {
+    room.current?.leave();
+    room.current = null;
+    setJoined(false);
+    setPeers([]);
+  }, [courseId]);
 
   const join = async () => {
     if (!me?.id || room.current) return;
-    const r = new VoiceRoom(
-      courseId,
-      { id: me.id, name },
-      setPeers,
-      (msg) => toast.error(msg),
-    );
+    setBusy(true);
+    const r = new VoiceRoom(courseId, { id: me.id, name }, setPeers, (msg) => toast.error(msg));
     try {
       await r.join();
       room.current = r;
       setJoined(true);
     } catch {
-      // toast already shown
+      /* toast shown */
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -53,91 +80,64 @@ export function VoiceChat({ courseId }: { courseId: string }) {
     setDeafened(false);
   };
 
-  const toggleMute = async () => {
-    if (room.current) setMuted(await room.current.toggleMute());
-  };
-
-  const toggleDeafen = async () => {
-    if (room.current) setDeafened(await room.current.toggleDeafen());
-  };
-
+  const meSeat = peers.find((p) => p.id === me?.id) ?? { id: "me", name, muted, deafened, speaking: false };
   const others = peers.filter((p) => p.id !== me?.id);
+  const btn = (on: boolean) =>
+    `flex h-11 w-11 items-center justify-center rounded-full transition-colors ${on ? "bg-like text-card" : "bg-tile hover:bg-muted"}`;
+
+  if (!joined) {
+    return (
+      <div className="panel flex items-center gap-4 p-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+          <AudioLines className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="font-bold">Голосовая комната курса</div>
+          <div className="text-xs text-muted-foreground">Обсудите урок голосом с однокурсниками. Нужен микрофон.</div>
+        </div>
+        <button
+          onClick={join}
+          disabled={busy || !me?.id}
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+        >
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />} Войти
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="panel p-4">
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 font-bold">
-          <Volume2 className="h-4 w-4 text-primary" /> Голосовой чат
-          {peers.length > 0 && (
-            <span className="rounded-full bg-tile px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-              {peers.length}
-            </span>
-          )}
-        </h2>
-        {!joined ? (
-          <button
-            onClick={join}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          >
-            <Phone className="h-4 w-4" /> Подключиться
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={toggleMute}
-              aria-label={muted ? "Включить микрофон" : "Выключить микрофон"}
-              className={`rounded-xl border p-2 ${muted ? "bg-like-soft text-like" : "bg-card"}`}
-            >
-              {muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={toggleDeafen}
-              aria-label={deafened ? "Включить звук" : "Выключить звук"}
-              className={`rounded-xl border p-2 ${deafened ? "bg-like-soft text-like" : "bg-card"}`}
-            >
-              {deafened ? <HeadphoneOff className="h-4 w-4" /> : <Headphones className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={leave}
-              aria-label="Отключиться"
-              className="rounded-xl bg-like-soft p-2 text-like"
-            >
-              <PhoneOff className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 font-bold">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+          </span>
+          Голосовая комната
+          <span className="rounded-full bg-tile px-2 py-0.5 text-xs font-semibold text-muted-foreground">{Math.max(peers.length, 1)}</span>
+        </div>
       </div>
 
-      {joined && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span
-            className={`flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground`}
-          >
-            {muted ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
-            {name} (вы)
-          </span>
-          {others.map((p) => (
-            <span
-              key={p.id}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                p.speaking ? "bg-primary text-primary-foreground" : "bg-tile"
-              }`}
-            >
-              {p.muted ? <MicOff className="h-3 w-3 opacity-60" /> : <Mic className="h-3 w-3" />}
-              {p.name}
-              {p.deafened && <HeadphoneOff className="h-3 w-3 opacity-60" />}
-            </span>
-          ))}
-          {others.length === 0 && (
-            <span className="py-1.5 text-xs text-muted-foreground">Пока вы здесь одни — позовите однокурсников!</span>
-          )}
-        </div>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Seat p={{ ...meSeat, muted, deafened }} you />
+        {others.map((p) => <Seat key={p.id} p={p} />)}
+      </div>
+      {others.length === 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">Пока вы здесь одни — позовите однокурсников на эту страницу.</p>
       )}
-      {!joined && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Общайтесь голосом с теми, кто сейчас на этом курсе. Нужен микрофон.
-        </p>
-      )}
+
+      <div className="mt-4 flex items-center justify-center gap-3 rounded-2xl bg-background/60 p-2">
+        <button onClick={async () => room.current && setMuted(await room.current.toggleMute())} aria-label={muted ? "Включить микрофон" : "Выключить микрофон"} className={btn(muted)}>
+          {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+        </button>
+        <button onClick={async () => room.current && setDeafened(await room.current.toggleDeafen())} aria-label={deafened ? "Включить звук" : "Выключить звук"} className={btn(deafened)}>
+          {deafened ? <HeadphoneOff className="h-5 w-5" /> : <Headphones className="h-5 w-5" />}
+        </button>
+        <button onClick={leave} aria-label="Выйти" className="flex h-11 items-center gap-2 rounded-full bg-like px-5 text-sm font-bold text-card">
+          <PhoneOff className="h-4 w-4" /> Выйти
+        </button>
+      </div>
     </div>
   );
 }
