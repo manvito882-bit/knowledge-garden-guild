@@ -60,6 +60,7 @@ function CoursePage() {
         <span className="mt-3 inline-block rounded-full bg-tag px-3 py-1 text-xs font-semibold text-tag-foreground">{course.tag}</span>
         <h1 className="mt-2 text-2xl font-bold md:text-3xl">{course.title}</h1>
 
+        <div className="mt-5"><VoiceChat courseId={courseId} /></div>
         {lesson ? <LessonView lesson={lesson} /> : <p className="mt-6 text-muted-foreground">Уроков пока нет</p>}
       </div>
 
