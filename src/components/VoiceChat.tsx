@@ -15,7 +15,8 @@ function Seat({ p, you }: { p: VoicePeer; you?: boolean }) {
     <div className="flex w-20 flex-col items-center gap-1.5">
       <div className="relative">
         <div
-          className={`flex h-14 w-14 items-center justify-center rounded-full font-display text-base font-bold transition-all ${
+          title={p.status === "connecting" ? "Подключается…" : p.status === "failed" ? "Нет связи" : undefined}
+          className={`${p.status === "connecting" ? "opacity-50 animate-pulse" : ""} flex h-14 w-14 items-center justify-center rounded-full font-display text-base font-bold transition-all ${
             p.speaking ? "bg-primary text-primary-foreground ring-4 ring-primary/40 scale-105" : "bg-tile text-foreground"
           }`}
         >
@@ -28,6 +29,8 @@ function Seat({ p, you }: { p: VoicePeer; you?: boolean }) {
         )}
       </div>
       <span className="w-full truncate text-center text-xs font-semibold">{you ? "Вы" : p.name}</span>
+      {p.status === "connecting" && <span className="-mt-1 text-[10px] text-muted-foreground">подключается…</span>}
+      {p.status === "failed" && <span className="-mt-1 text-[10px] text-like">нет связи</span>}
     </div>
   );
 }
@@ -41,6 +44,9 @@ export function VoiceChat({ courseId }: { courseId: string }) {
   const [deafened, setDeafened] = useState(false);
   const [name, setName] = useState("Участник");
   const room = useRef<VoiceRoom | null>(null);
+  // one seat per tab, so the same student on phone + laptop does not collide
+  const sid = useRef(`${Math.random().toString(36).slice(2, 10)}`);
+  const myKey = me?.id ? `${me.id}:${sid.current}` : "";
 
   useEffect(() => {
     if (!me?.id) return;
@@ -59,7 +65,7 @@ export function VoiceChat({ courseId }: { courseId: string }) {
   const join = async () => {
     if (!me?.id || room.current) return;
     setBusy(true);
-    const r = new VoiceRoom(courseId, { id: me.id, name }, setPeers, (msg) => toast.error(msg));
+    const r = new VoiceRoom(courseId, { id: myKey, name }, setPeers, (msg) => toast.error(msg));
     try {
       await r.join();
       room.current = r;
@@ -80,8 +86,8 @@ export function VoiceChat({ courseId }: { courseId: string }) {
     setDeafened(false);
   };
 
-  const meSeat = peers.find((p) => p.id === me?.id) ?? { id: "me", name, muted, deafened, speaking: false };
-  const others = peers.filter((p) => p.id !== me?.id);
+  const meSeat = peers.find((p) => p.id === myKey) ?? { id: "me", name, muted, deafened, speaking: false, status: "self" as const };
+  const others = peers.filter((p) => p.id !== myKey);
   const btn = (on: boolean) =>
     `flex h-11 w-11 items-center justify-center rounded-full transition-colors ${on ? "bg-like text-card" : "bg-tile hover:bg-muted"}`;
 
