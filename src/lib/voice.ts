@@ -131,9 +131,6 @@ export class VoiceRoom {
     const pc = new RTCPeerConnection(RTC_CONFIG);
     this.pcs.set(peerId, pc);
     this.local?.getTracks().forEach((t) => pc.addTrack(t, this.local!));
-    pc.onicecandidate = (e) => {
-      if (e.candidate) this.send(peerId, { kind: "ice", candidate: e.candidate.toJSON() });
-    };
     pc.ontrack = (e) => {
       const stream = e.streams[0] ?? new MediaStream([e.track]);
       let audio = this.audios.get(peerId);
@@ -214,7 +211,19 @@ export class VoiceRoom {
     const pc = this.newPc(peerId);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    this.send(peerId, { kind: "offer", sdp: offer });
+    this.send(peerId, { kind: "offer", sdp: await this.gathered(pc) });
+  }
+
+  // Send all network routes inside one message: the live channel drops bursts of small messages.
+  private gathered(pc: RTCPeerConnection): Promise<RTCSessionDescriptionInit> {
+    return new Promise((resolve) => {
+      const done = () => resolve(pc.localDescription!.toJSON());
+      if (pc.iceGatheringState === "complete") return done();
+      const t = setTimeout(done, 3000);
+      pc.addEventListener("icegatheringstatechange", () => {
+        if (pc.iceGatheringState === "complete") { clearTimeout(t); done(); }
+      });
+    });
   }
 
   private async flushIce(id: string, pc: RTCPeerConnection) {
@@ -238,7 +247,7 @@ export class VoiceRoom {
         await pc.setRemoteDescription(signal.sdp);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        this.send(from, { kind: "answer", sdp: answer });
+        this.send(from, { kind: "answer", sdp: await this.gathered(pc) });
         await this.flushIce(from, pc);
       } else if (signal.kind === "answer") {
         if (pc?.signalingState !== "have-local-offer") return;
