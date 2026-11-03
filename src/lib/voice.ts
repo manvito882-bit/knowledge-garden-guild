@@ -61,7 +61,7 @@ export class VoiceRoom {
         if (r.type === "inbound-rtp" && r.kind === "audio") bytesIn += r.bytesReceived ?? 0;
         if (r.type === "outbound-rtp" && r.kind === "audio") bytesOut += r.bytesSent ?? 0;
       });
-      out[id] = { state: pc.connectionState, bytesIn, bytesOut };
+      out[id] = { state: pc.connectionState, sig: pc.signalingState, ice: pc.iceConnectionState, gather: pc.iceGatheringState, bytesIn, bytesOut } as never;
     }
     return out;
   }
@@ -222,7 +222,9 @@ export class VoiceRoom {
     this.pendingIce.delete(id);
   }
 
+  log: string[] = [];
   private async handleSignal(from: string, signal: Signal) {
+    this.log.push(signal.kind);
     try {
       if (signal.kind === "hello") {
         await this.offer(from);
