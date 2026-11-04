@@ -16,15 +16,10 @@ type Signal =
   | { kind: "answer"; sdp: RTCSessionDescriptionInit }
   | { kind: "ice"; candidate: RTCIceCandidateInit };
 
-// STUN finds direct routes; TURN relays audio when networks (mobile, school wifi) block direct links.
+// STUN finds direct routes between participants.
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
-    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
-    {
-      urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turns:openrelay.metered.ca:443?transport=tcp"],
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
+    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:stun.cloudflare.com:3478"] },
   ],
 };
 
