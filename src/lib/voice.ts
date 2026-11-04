@@ -7,6 +7,7 @@ export type VoicePeer = {
   muted: boolean;
   deafened: boolean;
   speaking: boolean;
+  status: "self" | "connecting" | "connected" | "failed";
 };
 
 type Signal =
@@ -15,15 +16,10 @@ type Signal =
   | { kind: "answer"; sdp: RTCSessionDescriptionInit }
   | { kind: "ice"; candidate: RTCIceCandidateInit };
 
-// STUN finds direct routes; TURN relays audio when networks (mobile, school wifi) block direct links.
+// STUN finds direct routes between participants.
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
-    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
-    {
-      urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turns:openrelay.metered.ca:443?transport=tcp"],
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
+    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:stun.cloudflare.com:3478"] },
   ],
 };
 
@@ -47,7 +43,23 @@ export class VoiceRoom {
     private me: { id: string; name: string },
     private onPeers: (peers: VoicePeer[]) => void,
     private onError: (msg: string) => void,
-  ) {}
+  ) {
+    if (typeof window !== "undefined") (window as unknown as { __voice?: VoiceRoom }).__voice = this;
+  }
+
+  // For diagnostics: bytes of audio received from each peer.
+  async stats() {
+    const out: Record<string, { state: string; bytesIn: number; bytesOut: number }> = {};
+    for (const [id, pc] of this.pcs) {
+      let bytesIn = 0, bytesOut = 0;
+      (await pc.getStats()).forEach((r) => {
+        if (r.type === "inbound-rtp" && r.kind === "audio") bytesIn += r.bytesReceived ?? 0;
+        if (r.type === "outbound-rtp" && r.kind === "audio") bytesOut += r.bytesSent ?? 0;
+      });
+      out[id] = { state: pc.connectionState, sig: pc.signalingState, ice: pc.iceConnectionState, gather: pc.iceGatheringState, bytesIn, bytesOut } as never;
+    }
+    return out;
+  }
 
   async join() {
     try {
@@ -89,15 +101,21 @@ export class VoiceRoom {
   }
 
   private emit() {
-    this.lastPeers = this.lastPeers.map((p) => ({ ...p, speaking: this.speaking.get(p.id) ?? false }));
+    this.lastPeers = this.lastPeers.map((p) => ({ ...p, speaking: this.speaking.get(p.id) ?? false, status: this.statusOf(p.id) }));
     this.onPeers(this.lastPeers);
+  }
+
+  private statusOf(id: string): VoicePeer["status"] {
+    if (id === this.me.id) return "self";
+    const st = this.pcs.get(id)?.connectionState;
+    return st === "connected" ? "connected" : st === "failed" ? "failed" : "connecting";
   }
 
   private handlePresence() {
     const state = this.channel?.presenceState() ?? {};
     this.lastPeers = Object.entries(state).map(([id, metas]) => {
       const m = (metas[0] ?? {}) as { name?: string; muted?: boolean; deafened?: boolean };
-      return { id, name: m.name ?? "Участник", muted: !!m.muted, deafened: !!m.deafened, speaking: false };
+      return { id, name: m.name ?? "Участник", muted: !!m.muted, deafened: !!m.deafened, speaking: false, status: "connecting" as const };
     });
     this.emit();
     for (const [id] of this.pcs) if (!state[id]) this.dropPeer(id);
@@ -108,9 +126,6 @@ export class VoiceRoom {
     const pc = new RTCPeerConnection(RTC_CONFIG);
     this.pcs.set(peerId, pc);
     this.local?.getTracks().forEach((t) => pc.addTrack(t, this.local!));
-    pc.onicecandidate = (e) => {
-      if (e.candidate) this.send(peerId, { kind: "ice", candidate: e.candidate.toJSON() });
-    };
     pc.ontrack = (e) => {
       const stream = e.streams[0] ?? new MediaStream([e.track]);
       let audio = this.audios.get(peerId);
@@ -128,6 +143,7 @@ export class VoiceRoom {
       this.watchSpeaking(peerId, stream);
     };
     pc.onconnectionstatechange = () => {
+      this.emit();
       if (pc.connectionState === "failed") {
         // try once more from the side with the smaller id
         if (this.me.id < peerId) void this.offer(peerId);
@@ -190,7 +206,19 @@ export class VoiceRoom {
     const pc = this.newPc(peerId);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    this.send(peerId, { kind: "offer", sdp: offer });
+    this.send(peerId, { kind: "offer", sdp: await this.gathered(pc) });
+  }
+
+  // Send all network routes inside one message: the live channel drops bursts of small messages.
+  private gathered(pc: RTCPeerConnection): Promise<RTCSessionDescriptionInit> {
+    return new Promise((resolve) => {
+      const done = () => resolve(pc.localDescription!.toJSON());
+      if (pc.iceGatheringState === "complete") return done();
+      const t = setTimeout(done, 3000);
+      pc.addEventListener("icegatheringstatechange", () => {
+        if (pc.iceGatheringState === "complete") { clearTimeout(t); done(); }
+      });
+    });
   }
 
   private async flushIce(id: string, pc: RTCPeerConnection) {
@@ -198,7 +226,9 @@ export class VoiceRoom {
     this.pendingIce.delete(id);
   }
 
+  log: string[] = [];
   private async handleSignal(from: string, signal: Signal) {
+    this.log.push(signal.kind);
     try {
       if (signal.kind === "hello") {
         await this.offer(from);
@@ -212,7 +242,7 @@ export class VoiceRoom {
         await pc.setRemoteDescription(signal.sdp);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        this.send(from, { kind: "answer", sdp: answer });
+        this.send(from, { kind: "answer", sdp: await this.gathered(pc) });
         await this.flushIce(from, pc);
       } else if (signal.kind === "answer") {
         if (pc?.signalingState !== "have-local-offer") return;
