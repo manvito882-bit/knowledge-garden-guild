@@ -55,6 +55,56 @@ export type Database = {
           },
         ]
       }
+      communities: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
@@ -135,6 +185,57 @@ export type Database = {
           id?: string
           sender_id?: string
           student_id?: string
+        }
+        Relationships: []
+      }
+      direct_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          body: string
+          created_at: string
+          id: string
+          read: boolean
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
         }
         Relationships: []
       }
@@ -349,27 +450,161 @@ export type Database = {
         }
         Relationships: []
       }
+      post_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reports: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reason?: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          body: string
+          community_id: string | null
+          created_at: string
+          id: string
+          image_path: string | null
+        }
+        Insert: {
+          author_id: string
+          body?: string
+          community_id?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          community_id?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_path: string | null
+          bio: string | null
           created_at: string
           display_name: string | null
+          dm_policy: string
           email: string | null
           id: string
+          posts_visibility: string
         }
         Insert: {
           avatar_path?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
+          dm_policy?: string
           email?: string | null
           id: string
+          posts_visibility?: string
         }
         Update: {
           avatar_path?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
+          dm_policy?: string
           email?: string | null
           id?: string
+          posts_visibility?: string
         }
         Relationships: []
       }
@@ -468,6 +703,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bans: {
+        Row: {
+          created_at: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -491,6 +744,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
+      can_message: { Args: { _sender: string; _to: string }; Returns: boolean }
+      can_see_posts: {
+        Args: { _author: string; _viewer: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -498,6 +757,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_banned: { Args: { _uid: string }; Returns: boolean }
       is_curator_of: {
         Args: { _curator: string; _student: string }
         Returns: boolean
@@ -511,6 +771,35 @@ export type Database = {
           id: string
           score: number
           watched: number
+        }[]
+      }
+      profile_cards: {
+        Args: { _ids: string[] }
+        Returns: {
+          avatar_path: string
+          display_name: string
+          id: string
+        }[]
+      }
+      search_people: {
+        Args: { _q: string }
+        Returns: {
+          avatar_path: string
+          display_name: string
+          id: string
+        }[]
+      }
+      social_card: {
+        Args: { _id: string }
+        Returns: {
+          banned: boolean
+          bio: string
+          can_dm: boolean
+          can_see: boolean
+          followers: number
+          following: number
+          follows_me: boolean
+          i_follow: boolean
         }[]
       }
       student_card: {
