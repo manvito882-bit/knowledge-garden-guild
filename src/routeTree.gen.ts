@@ -15,13 +15,18 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAwardsRouteImport } from './routes/_authenticated/awards'
 import { Route as AuthenticatedCuratorRouteImport } from './routes/_authenticated/curator'
+import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated/feed'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
+import { Route as AuthenticatedPeopleRouteImport } from './routes/_authenticated/people'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
+import { Route as AuthenticatedCommunitiesIndexRouteImport } from './routes/_authenticated/communities.index'
+import { Route as AuthenticatedCommunitiesCommunityIdRouteImport } from './routes/_authenticated/communities.$communityId'
 import { Route as AuthenticatedCoursesIndexRouteImport } from './routes/_authenticated/courses.index'
 import { Route as AuthenticatedCoursesCourseIdRouteImport } from './routes/_authenticated/courses.$courseId'
 import { Route as AuthenticatedUUserIdRouteImport } from './routes/_authenticated/u.$userId'
@@ -55,15 +60,30 @@ const AuthenticatedCuratorRoute = AuthenticatedCuratorRouteImport.update({
   path: '/curator',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLeaderboardRoute =
   AuthenticatedLeaderboardRouteImport.update({
     id: '/leaderboard',
     path: '/leaderboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
   id: '/news',
   path: '/news',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPeopleRoute = AuthenticatedPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -91,6 +111,18 @@ const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
   path: '/support',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCommunitiesIndexRoute =
+  AuthenticatedCommunitiesIndexRouteImport.update({
+    id: '/communities/',
+    path: '/communities/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCommunitiesCommunityIdRoute =
+  AuthenticatedCommunitiesCommunityIdRouteImport.update({
+    id: '/communities/$communityId',
+    path: '/communities/$communityId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCoursesIndexRoute =
   AuthenticatedCoursesIndexRouteImport.update({
     id: '/courses/',
@@ -115,15 +147,20 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/awards': typeof AuthenticatedAwardsRoute
   '/curator': typeof AuthenticatedCuratorRoute
+  '/feed': typeof AuthenticatedFeedRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/people': typeof AuthenticatedPeopleRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/support': typeof AuthenticatedSupportRoute
+  '/communities/$communityId': typeof AuthenticatedCommunitiesCommunityIdRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/u/$userId': typeof AuthenticatedUUserIdRoute
+  '/communities/': typeof AuthenticatedCommunitiesIndexRoute
   '/courses/': typeof AuthenticatedCoursesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -132,15 +169,20 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/awards': typeof AuthenticatedAwardsRoute
   '/curator': typeof AuthenticatedCuratorRoute
+  '/feed': typeof AuthenticatedFeedRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/people': typeof AuthenticatedPeopleRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/support': typeof AuthenticatedSupportRoute
+  '/communities/$communityId': typeof AuthenticatedCommunitiesCommunityIdRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/u/$userId': typeof AuthenticatedUUserIdRoute
+  '/communities': typeof AuthenticatedCommunitiesIndexRoute
   '/courses': typeof AuthenticatedCoursesIndexRoute
 }
 export interface FileRoutesById {
@@ -151,15 +193,20 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/awards': typeof AuthenticatedAwardsRoute
   '/_authenticated/curator': typeof AuthenticatedCuratorRoute
+  '/_authenticated/feed': typeof AuthenticatedFeedRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
+  '/_authenticated/people': typeof AuthenticatedPeopleRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
+  '/_authenticated/communities/$communityId': typeof AuthenticatedCommunitiesCommunityIdRoute
   '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/_authenticated/u/$userId': typeof AuthenticatedUUserIdRoute
+  '/_authenticated/communities/': typeof AuthenticatedCommunitiesIndexRoute
   '/_authenticated/courses/': typeof AuthenticatedCoursesIndexRoute
 }
 export interface FileRouteTypes {
@@ -170,15 +217,20 @@ export interface FileRouteTypes {
     | '/admin'
     | '/awards'
     | '/curator'
+    | '/feed'
     | '/leaderboard'
+    | '/messages'
     | '/news'
+    | '/people'
     | '/profile'
     | '/schedule'
     | '/settings'
     | '/students'
     | '/support'
+    | '/communities/$communityId'
     | '/courses/$courseId'
     | '/u/$userId'
+    | '/communities/'
     | '/courses/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -187,15 +239,20 @@ export interface FileRouteTypes {
     | '/admin'
     | '/awards'
     | '/curator'
+    | '/feed'
     | '/leaderboard'
+    | '/messages'
     | '/news'
+    | '/people'
     | '/profile'
     | '/schedule'
     | '/settings'
     | '/students'
     | '/support'
+    | '/communities/$communityId'
     | '/courses/$courseId'
     | '/u/$userId'
+    | '/communities'
     | '/courses'
   id:
     | '__root__'
@@ -205,15 +262,20 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/awards'
     | '/_authenticated/curator'
+    | '/_authenticated/feed'
     | '/_authenticated/leaderboard'
+    | '/_authenticated/messages'
     | '/_authenticated/news'
+    | '/_authenticated/people'
     | '/_authenticated/profile'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
     | '/_authenticated/students'
     | '/_authenticated/support'
+    | '/_authenticated/communities/$communityId'
     | '/_authenticated/courses/$courseId'
     | '/_authenticated/u/$userId'
+    | '/_authenticated/communities/'
     | '/_authenticated/courses/'
   fileRoutesById: FileRoutesById
 }
@@ -267,6 +329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCuratorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/feed': {
+      id: '/_authenticated/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof AuthenticatedFeedRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/leaderboard': {
       id: '/_authenticated/leaderboard'
       path: '/leaderboard'
@@ -274,11 +343,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/news': {
       id: '/_authenticated/news'
       path: '/news'
       fullPath: '/news'
       preLoaderRoute: typeof AuthenticatedNewsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/people': {
+      id: '/_authenticated/people'
+      path: '/people'
+      fullPath: '/people'
+      preLoaderRoute: typeof AuthenticatedPeopleRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile': {
@@ -316,6 +399,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSupportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/communities/': {
+      id: '/_authenticated/communities/'
+      path: '/communities'
+      fullPath: '/communities/'
+      preLoaderRoute: typeof AuthenticatedCommunitiesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/communities/$communityId': {
+      id: '/_authenticated/communities/$communityId'
+      path: '/communities/$communityId'
+      fullPath: '/communities/$communityId'
+      preLoaderRoute: typeof AuthenticatedCommunitiesCommunityIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/courses/': {
       id: '/_authenticated/courses/'
       path: '/courses'
@@ -344,15 +441,20 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAwardsRoute: typeof AuthenticatedAwardsRoute
   AuthenticatedCuratorRoute: typeof AuthenticatedCuratorRoute
+  AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
+  AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
+  AuthenticatedCommunitiesCommunityIdRoute: typeof AuthenticatedCommunitiesCommunityIdRoute
   AuthenticatedCoursesCourseIdRoute: typeof AuthenticatedCoursesCourseIdRoute
   AuthenticatedUUserIdRoute: typeof AuthenticatedUUserIdRoute
+  AuthenticatedCommunitiesIndexRoute: typeof AuthenticatedCommunitiesIndexRoute
   AuthenticatedCoursesIndexRoute: typeof AuthenticatedCoursesIndexRoute
 }
 
@@ -360,15 +462,21 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAwardsRoute: AuthenticatedAwardsRoute,
   AuthenticatedCuratorRoute: AuthenticatedCuratorRoute,
+  AuthenticatedFeedRoute: AuthenticatedFeedRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
+  AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
+  AuthenticatedCommunitiesCommunityIdRoute:
+    AuthenticatedCommunitiesCommunityIdRoute,
   AuthenticatedCoursesCourseIdRoute: AuthenticatedCoursesCourseIdRoute,
   AuthenticatedUUserIdRoute: AuthenticatedUUserIdRoute,
+  AuthenticatedCommunitiesIndexRoute: AuthenticatedCommunitiesIndexRoute,
   AuthenticatedCoursesIndexRoute: AuthenticatedCoursesIndexRoute,
 }
 
