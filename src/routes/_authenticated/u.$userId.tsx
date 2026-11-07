@@ -1,5 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, queryOptions } from "@tanstack/react-query";
+import { useQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Feed, socialCardQuery } from "@/lib/social";
+import { meQuery } from "@/lib/chat";
 import { Award, BookOpen, Check, CheckCheck, Loader2, Play, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { avatarQuery } from "@/lib/profile";
@@ -37,6 +40,18 @@ function StudentPage() {
   const courses = useQuery(coursesQuery);
   const badges = useQuery(badgesQuery);
   const avatar = useQuery(avatarQuery(q.data?.card?.avatar_path));
+  const social = useQuery(socialCardQuery(userId));
+  const { data: me } = useQuery(meQuery);
+  const qc = useQueryClient();
+  const toggleFollow = async () => {
+    if (!me?.id) return;
+    const r = social.data?.i_follow
+      ? await supabase.from("follows").delete().eq("follower_id", me.id).eq("following_id", userId)
+      : await supabase.from("follows").insert({ follower_id: me.id, following_id: userId });
+    if (r.error) toast.error(r.error.message);
+    qc.invalidateQueries({ queryKey: ["social-card", userId] });
+    qc.invalidateQueries({ queryKey: ["relations"] });
+  };
 
   if (q.isPending || courses.isPending || badges.isPending) return <div className="flex min-h-64 items-center justify-center gap-2 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> Загружаем…</div>;
   if (q.isError || !q.data.card) return <div className="py-10"><h1 className="text-2xl font-bold">Профиль не найден</h1><Link to="/leaderboard" className="mt-3 inline-block underline">К рейтингу</Link></div>;
@@ -55,6 +70,12 @@ function StudentPage() {
         <div className="min-w-0">
           <h1 className="break-words text-2xl font-bold">{name}</h1>
           {card.is_curator && <span className="mt-1 inline-block rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">Куратор</span>}
+          {social.data?.bio && <p className="mt-2 whitespace-pre-wrap text-sm">{social.data.bio}</p>}
+          {social.data && <p className="mt-2 text-sm"><b>{social.data.followers}</b> подписчиков · <b>{social.data.following}</b> подписок{social.data.i_follow && social.data.follows_me ? " · вы друзья" : social.data.follows_me ? " · подписан на вас" : ""}</p>}
+          {me?.id && me.id !== userId && <div className="mt-3 flex flex-wrap gap-2">
+            <button onClick={toggleFollow} className={`rounded-xl px-4 py-2 text-sm font-bold ${social.data?.i_follow ? "border bg-card" : "bg-primary text-primary-foreground"}`}>{social.data?.i_follow ? "Отписаться" : "Подписаться"}</button>
+            {social.data?.can_dm && <Link to="/messages" search={{ to: userId }} className="rounded-xl border bg-card px-4 py-2 text-sm font-semibold">Написать</Link>}
+          </div>}
           <p className="mt-2 text-sm text-muted-foreground">В школе с {new Date(card.created_at).toLocaleDateString("ru-RU", { month: "long", year: "numeric" })}</p>
         </div>
       </div>
@@ -65,6 +86,10 @@ function StudentPage() {
     <section>
       <h2 className="mb-5 text-xl font-bold">Награды</h2>
       {earned.length === 0 ? <p className="text-sm text-muted-foreground">Пока нет наград.</p> : <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">{earned.map((b) => <article key={b.id} className="flex flex-col items-center rounded-lg border bg-card p-5 text-center"><BadgeImage url={b.image_url} className="h-20 w-20 rounded-full" /><h3 className="mt-3 text-sm font-bold">{b.title}</h3><span className="mt-2 flex items-center gap-1 text-xs font-semibold text-pen-teal"><Check className="h-3 w-3" /> Получено</span></article>)}</div>}
+    </section>
+    <section>
+      <h2 className="mb-5 text-xl font-bold">Посты</h2>
+      {social.data?.can_see ? <Feed scope={{ kind: "author", id: userId }} /> : <p className="text-sm text-muted-foreground">Ученик скрыл свои посты.</p>}
     </section>
     <Link to="/leaderboard" className="inline-flex items-center gap-2 text-sm font-semibold underline"><Trophy className="h-4 w-4" /> Рейтинг учеников</Link>
   </div>;

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper, Award, UserRound, Users, Trophy } from "lucide-react";
+import { Layers, CalendarDays, PenLine, Headphones, Moon, Sun, Settings, LogOut, Menu, X, ShieldCheck, Newspaper, Award, UserRound, Users, Trophy, Rss, MessageCircle, UsersRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { teachersQuery, penColor } from "@/lib/school";
 import { isAdminQuery } from "@/lib/admin";
@@ -79,6 +79,18 @@ function Nav({ onNavigate }: { onNavigate: () => void }) {
       </div>
       <Link to="/profile" activeProps={active} className={item} onClick={onNavigate}>
         <UserRound className="h-4 w-4" /> Мой профиль
+      </Link>
+      <Link to="/feed" activeProps={active} className={item} onClick={onNavigate}>
+        <Rss className="h-4 w-4" /> Лента
+      </Link>
+      <Link to="/messages" activeProps={active} className={item} onClick={onNavigate}>
+        <MessageCircle className="h-4 w-4" /> Сообщения
+      </Link>
+      <Link to="/people" activeProps={active} className={item} onClick={onNavigate}>
+        <Users className="h-4 w-4" /> Друзья
+      </Link>
+      <Link to="/communities" activeProps={active} className={item} onClick={onNavigate}>
+        <UsersRound className="h-4 w-4" /> Сообщества
       </Link>
       <Link to="/courses" activeOptions={{ exact: true }} activeProps={active} className={item} onClick={onNavigate}>
         <Layers className="h-4 w-4" /> Все курсы

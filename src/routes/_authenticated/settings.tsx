@@ -22,16 +22,28 @@ function SettingsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [uid, setUid] = useState("");
+  const [bio, setBio] = useState("");
+  const [vis, setVis] = useState("all");
+  const [dm, setDm] = useState("all");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       setUid(data.user.id);
       setEmail(data.user.email ?? "");
-      const { data: p } = await supabase.from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
+      const { data: p } = await supabase.from("profiles").select("display_name,bio,posts_visibility,dm_policy").eq("id", data.user.id).maybeSingle();
       setName(p?.display_name ?? "");
+      setBio(p?.bio ?? "");
+      setVis(p?.posts_visibility ?? "all");
+      setDm(p?.dm_policy ?? "all");
     });
   }, []);
+
+  const savePrivacy = async () => {
+    const { error } = await supabase.from("profiles").update({ bio: bio.trim() || null, posts_visibility: vis, dm_policy: dm }).eq("id", uid);
+    if (error) toast.error("Не удалось сохранить");
+    else toast.success("Сохранено");
+  };
 
   const save = async () => {
     const { error } = await supabase.from("profiles").upsert({ id: uid, display_name: name });
@@ -63,6 +75,24 @@ function SettingsPage() {
         <button onClick={save} className="mt-3 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
           Сохранить
         </button>
+      </section>
+      <section className="panel p-5">
+        <h2 className="font-bold">О себе и приватность</h2>
+        <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={300} rows={3} placeholder="Пара слов о себе"
+          className="mt-4 w-full resize-none rounded-xl border bg-tile px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
+        <label className="mt-3 block text-sm font-semibold">Кто видит мои посты</label>
+        <select value={vis} onChange={(e) => setVis(e.target.value)} className="mt-1 w-full rounded-xl border bg-tile px-3 py-2.5 text-sm">
+          <option value="all">Все ученики</option>
+          <option value="friends">Только друзья</option>
+          <option value="nobody">Только я</option>
+        </select>
+        <label className="mt-3 block text-sm font-semibold">Кто может писать мне</label>
+        <select value={dm} onChange={(e) => setDm(e.target.value)} className="mt-1 w-full rounded-xl border bg-tile px-3 py-2.5 text-sm">
+          <option value="all">Все ученики</option>
+          <option value="friends">Только друзья</option>
+          <option value="nobody">Никто</option>
+        </select>
+        <button onClick={savePrivacy} className="mt-3 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">Сохранить</button>
       </section>
       <section className="panel p-5">
         <h2 className="font-bold">Оформление</h2>
