@@ -9,6 +9,7 @@ import { penColor } from "@/lib/school";
 import { badgesQuery, BadgeImage, conditionLabel } from "@/lib/rewards";
 import { TicketChat } from "./support";
 import { ticketStatus, ticketCategories } from "@/lib/chat";
+import { fetchCards } from "@/lib/social";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -38,7 +39,7 @@ function report(error: { message: string } | null, ok = "Сохранено") {
 
 function AdminPage() {
   const { data: isAdmin, isLoading } = useQuery(isAdminQuery);
-  const [tab, setTab] = useState<"teachers" | "courses" | "lessons" | "news" | "support" | "badges" | "curators">("courses");
+  const [tab, setTab] = useState<"teachers" | "courses" | "lessons" | "news" | "support" | "badges" | "curators" | "moderation">("courses");
 
   if (isLoading) return <div className="panel h-64 animate-pulse" />;
   if (!isAdmin)
@@ -58,6 +59,7 @@ function AdminPage() {
     ["badges", "Награды"],
     ["support", "Поддержка"],
     ["curators", "Кураторы"],
+    ["moderation", "Модерация"],
   ] as const;
 
   return (
@@ -82,7 +84,77 @@ function AdminPage() {
         {tab === "badges" && <Badges />}
         {tab === "support" && <Support />}
         {tab === "curators" && <Curators />}
+        {tab === "moderation" && <Moderation />}
       </div>
+    </div>
+  );
+}
+
+/* ---------- Moderation ---------- */
+
+function Moderation() {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["moderation"],
+    queryFn: async () => {
+      const [r, b] = await Promise.all([
+        supabase.from("post_reports").select("id,post_id,reporter_id,reason,status,created_at,posts(body,author_id,image_path)").eq("status", "open").order("created_at", { ascending: false }),
+        supabase.from("user_bans").select("user_id,reason,created_at").order("created_at", { ascending: false }),
+      ]);
+      if (r.error) throw r.error;
+      const cards = await fetchCards([...(r.data ?? []).flatMap((x) => [x.reporter_id, x.posts?.author_id ?? ""]).filter(Boolean), ...(b.data ?? []).map((x) => x.user_id)]);
+      return { reports: r.data ?? [], bans: b.data ?? [], cards };
+    },
+  });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["moderation"] });
+  const dismiss = async (id: string) => { report((await supabase.from("post_reports").update({ status: "dismissed" }).eq("id", id)).error, "Жалоба отклонена"); refresh(); };
+  const delPost = async (postId: string, image: string | null) => {
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
+    if (!error && image) await supabase.storage.from("post-images").remove([image]);
+    report(error, "Пост удалён"); refresh(); qc.invalidateQueries({ queryKey: ["feed"] });
+  };
+  const ban = async (uid: string) => {
+    const reason = prompt("Причина блокировки");
+    if (reason === null) return;
+    report((await supabase.from("user_bans").insert({ user_id: uid, reason })).error, "Пользователь заблокирован"); refresh();
+  };
+  const unban = async (uid: string) => { report((await supabase.from("user_bans").delete().eq("user_id", uid)).error, "Блокировка снята"); refresh(); };
+  const name = (id: string) => q.data?.cards.get(id)?.display_name || "Ученик";
+  if (q.isPending) return <div className="panel h-40 animate-pulse" />;
+  return (
+    <div className="space-y-6">
+      <section>
+        <h2 className="mb-3 font-bold">Жалобы на посты</h2>
+        {q.data?.reports.length === 0 && <p className="text-sm text-muted-foreground">Новых жалоб нет.</p>}
+        <div className="space-y-3">
+          {q.data?.reports.map((r) => (
+            <div key={r.id} className="panel p-4 text-sm">
+              <p className="text-xs text-muted-foreground">От {name(r.reporter_id)} · {new Date(r.created_at).toLocaleString("ru-RU")}</p>
+              <p className="mt-1"><b>Причина:</b> {r.reason || "—"}</p>
+              <div className="mt-2 rounded-xl bg-tile p-3"><b>{r.posts ? name(r.posts.author_id) : ""}:</b> {r.posts?.body || (r.posts?.image_path ? "(фото)" : "")}</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button className={btn} onClick={() => r.posts && delPost(r.post_id, r.posts.image_path)}>Удалить пост</button>
+                {r.posts && <button className="rounded-xl border bg-card px-4 py-2.5 text-sm font-semibold text-destructive" onClick={() => ban(r.posts!.author_id)}>Заблокировать автора</button>}
+                <button className="rounded-xl border bg-card px-4 py-2.5 text-sm" onClick={() => dismiss(r.id)}>Отклонить жалобу</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section>
+        <h2 className="mb-3 font-bold">Заблокированные</h2>
+        <p className="mb-2 text-sm text-muted-foreground">Заблокированные не могут писать посты, комментарии и сообщения.</p>
+        {q.data?.bans.length === 0 && <p className="text-sm text-muted-foreground">Никто не заблокирован.</p>}
+        <div className="panel divide-y">
+          {q.data?.bans.map((b) => (
+            <div key={b.user_id} className="flex items-center gap-3 p-3 text-sm">
+              <Link to="/u/$userId" params={{ userId: b.user_id }} className="flex-1 font-semibold hover:underline">{name(b.user_id)}</Link>
+              <span className="text-muted-foreground">{b.reason}</span>
+              <button className="rounded-xl border bg-card px-3 py-1.5" onClick={() => unban(b.user_id)}>Разблокировать</button>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
