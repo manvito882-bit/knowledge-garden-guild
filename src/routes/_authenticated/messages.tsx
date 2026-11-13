@@ -8,7 +8,7 @@ import { meQuery } from "@/lib/chat";
 import { Avatar, fetchCards, socialCardQuery } from "@/lib/social";
 
 export const Route = createFileRoute("/_authenticated/messages")({
-  validateSearch: (s: Record<string, unknown>): { to?: string } => (typeof s.to === "string" ? { to: s.to } : {}),
+  validateSearch: (s: Record<string, unknown>): { to?: string } => (typeof s["to"] === "string" ? { to: s["to"] } : {}),
   head: () => ({
     meta: [
       { title: "Сообщения — Luminary" },
@@ -100,7 +100,7 @@ function Thread({ meId, other, msgs, name, card }: { meId: string; other: string
   const send = async () => {
     if (!text.trim()) return;
     const { error } = await supabase.from("direct_messages").insert({ sender_id: meId, recipient_id: other, body: text.trim().slice(0, 4000) });
-    if (error) return toast.error("Не отправилось: этот ученик ограничил, кто может ему писать.");
+    if (error) { toast.error("Не отправилось: этот ученик ограничил, кто может ему писать."); return; }
     setText("");
     qc.invalidateQueries({ queryKey: ["dms"] });
   };

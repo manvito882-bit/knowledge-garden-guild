@@ -39,9 +39,9 @@ function CommunitiesPage() {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const create = async () => {
-    if (!name.trim() || !me?.id) return;
+    if (!name.trim() || !me?.id) return undefined;
     const { data, error } = await supabase.from("communities").insert({ name: name.trim().slice(0, 80), description: desc.trim().slice(0, 500) || null, owner_id: me.id }).select("id").single();
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await supabase.from("community_members").insert({ community_id: data.id, user_id: me.id });
     setName(""); setDesc("");
     qc.invalidateQueries({ queryKey: ["communities"] });

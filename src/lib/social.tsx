@@ -123,7 +123,7 @@ export function Composer({ communityId, placeholder = "Что нового?" }: 
   );
 }
 
-export function PostCard({ post, canModerate }: { post: Post; canModerate?: boolean }) {
+export function PostCard({ post, canModerate }: { post: Post; canModerate?: boolean | undefined }) {
   const { data: me } = useQuery(meQuery);
   const { data: isAdmin } = useQuery(isAdminQuery);
   const qc = useQueryClient();
