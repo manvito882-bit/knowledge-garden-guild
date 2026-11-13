@@ -89,7 +89,7 @@ export function Composer({ communityId, placeholder = "Что нового?" }: 
   const qc = useQueryClient();
   const submit = async () => {
     if ((!text.trim() && !file) || busy) return;
-    if (file && file.size > 10 * 1024 * 1024) return toast.error("Картинка больше 10 МБ");
+    if (file && file.size > 10 * 1024 * 1024) { toast.error("Картинка больше 10 МБ"); return; }
     setBusy(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
